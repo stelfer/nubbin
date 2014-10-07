@@ -4,8 +4,10 @@ QEMU_ARGS		= -boot order=a -fda
 TOOLCHAIN		= toolchain
 TOOLCHAIN_BIN	= $(TOOLCHAIN)/bin
 
-NASM			= $(TOOLCHAIN_BIN)/nasm
+NASM			= $(TOOLCHAIN_BIN)/nasm -Ikernel/asm/
 NDIASM			= $(TOOLCHAIN_BIN) -b16 -o7c00h -a -s7c3eh
+
+NASM_MAKEDEPEND	= $(NASM) -M -MG -MT '$(patsubst %.asm,%.o,$<)'
 
 HOST_CC			= /usr/local/bin/gcc-4.9
 
@@ -15,14 +17,15 @@ STRIP			= $(TOOLCHAIN_BIN)/i686-elf-strip
 MAKEDEPEND 		= $(CC) $(CFLAGS) -MM -MG -MT '$(patsubst %.c,%.o,$<)'
 
 ASM_SOURCES 	= 					\
-	kernel/print_string.asm 		\
-	kernel/print_hex.asm 			\
-	kernel/disk_load.asm 			\
-	kernel/print_string_pm.asm		\
-	kernel/gdt.asm					\
-	kernel/switch_to_pm.asm
+	kernel/asm/print_string.asm 		\
+	kernel/asm/print_hex.asm 			\
+	kernel/asm/disk_load.asm 			\
+	kernel/asm/print_string_pm.asm		\
+	kernel/asm/gdt.asm					\
+	kernel/asm/switch_to_pm.asm
 
-NASM 			+=  -Ikernel/
+BIN_OBJS 		= kernel/asm/boot_sect.o
+BIN_IMAGES 		= kernel/asm/kernel.bin
 
 INCLUDES 		= -Iinclude
 CFLAGS 			= $(INCLUDES) -m32 -nostdlib -fno-builtin -fno-stack-protector -ffreestanding
@@ -35,7 +38,7 @@ TEST_OBJS 		= $(TEST_SOURCES:.c=.o)
 TESTS 			= $(addsuffix .test,$(TEST_SOURCES:.c=))
 
 SOURCES 		= $(KERNEL_SOURCES) $(TEST_SOURCES)
-DEPFILES 		= $(SOURCES:.c=.d)
+DEPFILES 		= $(SOURCES:.c=.d) $(ASM_SOURCES:.asm=.d) $(BIN_OBJS:.o=.d) $(BIN_IMAGES:.bin=.d)
 
 ALL				= os-image
 
@@ -45,23 +48,19 @@ all: $(ALL)
 run: $(ALL)
 	$(QEMU) $(QEMU_ARGS) $<
 
-.PHONY: dis
-dis: kernel/boot_sect.bin
-	$(NDIASM) $<
-
 os-image : $(TESTS)
 
-kernel/boot_sect.bin: kernel/boot_sect.asm $(ASM) 
+kernel/asm/boot_sect.o: kernel/asm/boot_sect.asm
 	$(NASM) $< -f bin -o $@
 
-kernel/kernel.bin: kernel/kernel_entry.o $(KERNEL_OBJS)
+kernel/asm/kernel.bin: kernel/asm/kernel.o $(KERNEL_OBJS)
 	$(LD) -m elf_i386 -o $@ -Tkernel/link.ld $^ --oformat binary 
 
-kernel/kernel_entry.o: kernel/kernel_entry.asm
+kernel/asm/kernel.o: kernel/asm/kernel.asm
 	$(NASM) -f elf32 -o $@ $<
 
-os-image: kernel/boot_sect.bin kernel/kernel.bin
-	cat $(filter %.bin, $^) > $@
+os-image: kernel/asm/boot_sect.o kernel/asm/kernel.bin
+	cat $(filter %.bin %.o, $^) > $@
 
 kernel/test/%.o : kernel/test/%.c kernel/test/%.d
 	$(HOST_CC) $(INCLUDES) -ffreestanding -c $< -o $@
@@ -77,8 +76,11 @@ kernel/%.o : kernel/%.c
 kernel/%.d : kernel/%.c
 	@$(MAKEDEPEND) $< > $@
 
+kernel/asm/%.d : kernel/asm/%.asm
+	@$(NASM_MAKEDEPEND) $< > $@
+
 clean:
-	rm -f *.bin **/*~ *.o $(ALL) $(DEPFILES)
+	rm -f *.bin **/*~ **/*.o $(ALL) $(DEPFILES)
 	rm -f $(OBJS) kernel/*.bin 
 	rm -f $(TEST_OBJS) $(TESTS) kernel/test/*.failed
 
