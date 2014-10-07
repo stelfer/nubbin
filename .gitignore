@@ -1,6 +1,6 @@
 toolchain/
-*~
-kernel/*.o
-kernel/*.bin
 os-image
+**/*~
 **/*.d
+**/*.o
+**/*.bin
