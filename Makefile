@@ -7,6 +7,9 @@ TOOLCHAIN_BIN=$(TOOLCHAIN)/bin
 NASM=$(TOOLCHAIN_BIN)/nasm
 NDIASM=$(TOOLCHAIN_BIN) -b16 -o7c00h -a -s7c3eh
 
+HOST_CC=/usr/local/bin/gcc-4.9
+
+
 CC=$(TOOLCHAIN_BIN)/i686-elf-gcc
 LD=$(TOOLCHAIN_BIN)/i686-elf-ld
 STRIP=$(TOOLCHAIN_BIN)/i686-elf-strip
@@ -21,11 +24,19 @@ ASM_SOURCES = 					\
 
 NASM +=  -Ikernel/
 
-C_SOURCES = $(wildcard kernel/*.c drivers/*.c)
-HEADERS = $(wildcard kernel/*.h drivers/*.h)
-OBJS = ${C_SOURCES:.c=.o}
+
+INCLUDES = -Iinclude
+CFLAGS = $(INCLUDES) -m32 -nostdlib -fno-builtin -fno-stack-protector -ffreestanding
+
+KERNEL_SOURCES = $(wildcard kernel/*.c drivers/*.c)
+KERNEL_OBJS = ${KERNEL_SOURCES:.c=.o}
+
+TEST_SOURCES = $(wildcard kernel/test/*.c)
+TEST_OBJS = ${TEST_SOURCES:.c=.o}
+TESTS = ${TEST_SOURCES:.c=}
 
 ALL=os-image
+
 
 all: $(ALL)
 
@@ -37,22 +48,30 @@ run: $(ALL)
 dis: kernel/boot_sect.bin
 	$(NDIASM) $<
 
+os-image : $(TESTS)
+
 kernel/boot_sect.bin: kernel/boot_sect.asm $(ASM) 
 	$(NASM) $< -f bin -o $@
 
-kernel/kernel.bin: kernel/kernel_entry.o $(OBJS)
+kernel/kernel.bin: kernel/kernel_entry.o $(KERNEL_OBJS)
 	$(LD) -m elf_i386 -o $@ -Tkernel/link.ld $^ --oformat binary 
 
 kernel/kernel_entry.o: kernel/kernel_entry.asm
 	$(NASM) -f elf32 -o $@ $<
 
 os-image: kernel/boot_sect.bin kernel/kernel.bin
-	cat $^ > $@
+	cat $(filter %.bin, $^) > $@
 
-%.o : %.c $(HEADERS)
-	$(CC) -m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector -ffreestanding -c $< -o $@
+kernel/test/% : kernel/test/%.c
+	@rm -f $@ $@.failed
+	$(HOST_CC) $(INCLUDES) -ffreestanding -o $@.failed $<
+	$@.failed && mv $@.failed $@
+
+kernel/%.o : kernel/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 
 clean:
 	rm -f *.bin *~ *.o $(ALL)
 	rm -f $(OBJS) kernel/*.bin
-
+	rm -f $(TEST_OBJS) $(TESTS) kernel/test/*.failed
