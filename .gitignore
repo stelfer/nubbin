@@ -4,3 +4,4 @@ os-image
 **/*.d
 **/*.o
 **/*.bin
+**/*.test

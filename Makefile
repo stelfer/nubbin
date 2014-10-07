@@ -34,7 +34,7 @@ KERNEL_OBJS = ${KERNEL_SOURCES:.c=.o}
 
 TEST_SOURCES = $(wildcard kernel/test/*.c)
 TEST_OBJS = ${TEST_SOURCES:.c=.o}
-TESTS = ${TEST_SOURCES:.c=}
+TESTS = $(addsuffix .test,$(TEST_SOURCES:.c=))
 
 SOURCES = $(KERNEL_SOURCES) $(TEST_SOURCES)
 DEPFILES = $(SOURCES:.c=.d)
@@ -69,7 +69,7 @@ os-image: kernel/boot_sect.bin kernel/kernel.bin
 kernel/test/%.o : kernel/test/%.c kernel/test/%.d
 	$(HOST_CC) $(INCLUDES) -ffreestanding -c $< -o $@
 
-kernel/test/% : kernel/test/%.o
+kernel/test/%.test : kernel/test/%.o
 	@rm -f $@ $@.failed
 	$(HOST_CC) -o $@.failed $<
 	$@.failed && mv $@.failed $@
@@ -81,7 +81,7 @@ kernel/%.d : kernel/%.c
 	@$(MAKEDEPEND) $< > $@
 
 clean:
-	rm -f *.bin *~ *.o $(ALL) $(DEPFILES)
+	rm -f *.bin **/*~ *.o $(ALL) $(DEPFILES)
 	rm -f $(OBJS) kernel/*.bin 
 	rm -f $(TEST_OBJS) $(TESTS) kernel/test/*.failed
 
