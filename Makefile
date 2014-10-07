@@ -13,6 +13,7 @@ HOST_CC=/usr/local/bin/gcc-4.9
 CC=$(TOOLCHAIN_BIN)/i686-elf-gcc
 LD=$(TOOLCHAIN_BIN)/i686-elf-ld
 STRIP=$(TOOLCHAIN_BIN)/i686-elf-strip
+MAKEDEPEND = $(CC) $(CFLAGS) -MM -MG -MT '$(patsubst %.c,%.o,$<)'
 
 ASM_SOURCES = 					\
 	kernel/print_string.asm \
@@ -34,6 +35,9 @@ KERNEL_OBJS = ${KERNEL_SOURCES:.c=.o}
 TEST_SOURCES = $(wildcard kernel/test/*.c)
 TEST_OBJS = ${TEST_SOURCES:.c=.o}
 TESTS = ${TEST_SOURCES:.c=}
+
+SOURCES = $(KERNEL_SOURCES) $(TEST_SOURCES)
+DEPFILES = $(SOURCES:.c=.d)
 
 ALL=os-image
 
@@ -62,16 +66,23 @@ kernel/kernel_entry.o: kernel/kernel_entry.asm
 os-image: kernel/boot_sect.bin kernel/kernel.bin
 	cat $(filter %.bin, $^) > $@
 
-kernel/test/% : kernel/test/%.c
+kernel/test/%.o : kernel/test/%.c kernel/test/%.d
+	$(HOST_CC) $(INCLUDES) -ffreestanding -c $< -o $@
+
+kernel/test/% : kernel/test/%.o
 	@rm -f $@ $@.failed
-	$(HOST_CC) $(INCLUDES) -ffreestanding -o $@.failed $<
+	$(HOST_CC) -o $@.failed $<
 	$@.failed && mv $@.failed $@
 
 kernel/%.o : kernel/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+kernel/%.d : kernel/%.c
+	$(MAKEDEPEND) $< > $@
 
 clean:
-	rm -f *.bin *~ *.o $(ALL)
-	rm -f $(OBJS) kernel/*.bin
+	rm -f *.bin *~ *.o $(ALL) $(DEPFILES)
+	rm -f $(OBJS) kernel/*.bin 
 	rm -f $(TEST_OBJS) $(TESTS) kernel/test/*.failed
+
+-include $(DEPFILES)
