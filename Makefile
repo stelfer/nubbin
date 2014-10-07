@@ -80,8 +80,8 @@ kernel/asm/%.d : kernel/asm/%.asm
 	@$(NASM_MAKEDEPEND) $< > $@
 
 clean:
-	rm -f *.bin **/*~ **/*.o $(ALL) $(DEPFILES)
-	rm -f $(OBJS) kernel/*.bin 
-	rm -f $(TEST_OBJS) $(TESTS) kernel/test/*.failed
+	@rm -f *.bin **/*~ **/*.o $(ALL) $(DEPFILES)
+	@rm -f $(OBJS) kernel/*.bin 
+	@rm -f $(TEST_OBJS) $(TESTS) kernel/test/*.failed
 
 -include $(DEPFILES)
