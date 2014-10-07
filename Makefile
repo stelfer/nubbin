@@ -1,46 +1,43 @@
-QEMU=/usr/local/bin/qemu-system-i386
-QEMU_ARGS=-boot order=a -fda 
+QEMU			= /usr/local/bin/qemu-system-i386
+QEMU_ARGS		= -boot order=a -fda 
 
-TOOLCHAIN=toolchain
-TOOLCHAIN_BIN=$(TOOLCHAIN)/bin
+TOOLCHAIN		= toolchain
+TOOLCHAIN_BIN	= $(TOOLCHAIN)/bin
 
-NASM=$(TOOLCHAIN_BIN)/nasm
-NDIASM=$(TOOLCHAIN_BIN) -b16 -o7c00h -a -s7c3eh
+NASM			= $(TOOLCHAIN_BIN)/nasm
+NDIASM			= $(TOOLCHAIN_BIN) -b16 -o7c00h -a -s7c3eh
 
-HOST_CC=/usr/local/bin/gcc-4.9
+HOST_CC			= /usr/local/bin/gcc-4.9
 
+CC				= $(TOOLCHAIN_BIN)/i686-elf-gcc
+LD				= $(TOOLCHAIN_BIN)/i686-elf-ld
+STRIP			= $(TOOLCHAIN_BIN)/i686-elf-strip
+MAKEDEPEND 		= $(CC) $(CFLAGS) -MM -MG -MT '$(patsubst %.c,%.o,$<)'
 
-CC=$(TOOLCHAIN_BIN)/i686-elf-gcc
-LD=$(TOOLCHAIN_BIN)/i686-elf-ld
-STRIP=$(TOOLCHAIN_BIN)/i686-elf-strip
-MAKEDEPEND = $(CC) $(CFLAGS) -MM -MG -MT '$(patsubst %.c,%.o,$<)'
-
-ASM_SOURCES = 					\
-	kernel/print_string.asm \
-	kernel/print_hex.asm \
-	kernel/disk_load.asm \
-	kernel/print_string_pm.asm\
-	kernel/gdt.asm\
+ASM_SOURCES 	= 					\
+	kernel/print_string.asm 		\
+	kernel/print_hex.asm 			\
+	kernel/disk_load.asm 			\
+	kernel/print_string_pm.asm		\
+	kernel/gdt.asm					\
 	kernel/switch_to_pm.asm
 
-NASM +=  -Ikernel/
+NASM 			+=  -Ikernel/
 
+INCLUDES 		= -Iinclude
+CFLAGS 			= $(INCLUDES) -m32 -nostdlib -fno-builtin -fno-stack-protector -ffreestanding
 
-INCLUDES = -Iinclude
-CFLAGS = $(INCLUDES) -m32 -nostdlib -fno-builtin -fno-stack-protector -ffreestanding
+KERNEL_SOURCES 	= $(wildcard kernel/*.c drivers/*.c)
+KERNEL_OBJS 	= $(KERNEL_SOURCES:.c=.o)
 
-KERNEL_SOURCES = $(wildcard kernel/*.c drivers/*.c)
-KERNEL_OBJS = ${KERNEL_SOURCES:.c=.o}
+TEST_SOURCES 	= $(wildcard kernel/test/*.c)
+TEST_OBJS 		= $(TEST_SOURCES:.c=.o)
+TESTS 			= $(addsuffix .test,$(TEST_SOURCES:.c=))
 
-TEST_SOURCES = $(wildcard kernel/test/*.c)
-TEST_OBJS = ${TEST_SOURCES:.c=.o}
-TESTS = $(addsuffix .test,$(TEST_SOURCES:.c=))
+SOURCES 		= $(KERNEL_SOURCES) $(TEST_SOURCES)
+DEPFILES 		= $(SOURCES:.c=.d)
 
-SOURCES = $(KERNEL_SOURCES) $(TEST_SOURCES)
-DEPFILES = $(SOURCES:.c=.d)
-
-ALL=os-image
-
+ALL				= os-image
 
 all: $(ALL)
 
