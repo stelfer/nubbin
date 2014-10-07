@@ -24,7 +24,7 @@ ASM_SOURCES 	= 					\
 	kernel/asm/gdt.asm					\
 	kernel/asm/switch_to_pm.asm
 
-BIN_OBJS 		= kernel/asm/boot_sect.o
+BIN_OBJS 		= kernel/asm/boot.o
 BIN_IMAGES 		= kernel/asm/kernel.bin
 
 INCLUDES 		= -Iinclude
@@ -50,7 +50,7 @@ run: $(ALL)
 
 os-image : $(TESTS)
 
-kernel/asm/boot_sect.o: kernel/asm/boot_sect.asm
+kernel/asm/boot.o: kernel/asm/boot.asm
 	$(NASM) $< -f bin -o $@
 
 kernel/asm/kernel.bin: kernel/asm/kernel.o $(KERNEL_OBJS)
@@ -59,7 +59,7 @@ kernel/asm/kernel.bin: kernel/asm/kernel.o $(KERNEL_OBJS)
 kernel/asm/kernel.o: kernel/asm/kernel.asm
 	$(NASM) -f elf32 -o $@ $<
 
-os-image: kernel/asm/boot_sect.o kernel/asm/kernel.bin
+os-image: kernel/asm/boot.o kernel/asm/kernel.bin
 	cat $(filter %.bin %.o, $^) > $@
 
 kernel/test/%.o : kernel/test/%.c kernel/test/%.d

@@ -1,3 +1,7 @@
+
+
+#include <kernel.h>
+
 unsigned short *video = (unsigned short *)0xB8000;
 unsigned char attrib = 0xF;
 
