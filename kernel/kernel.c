@@ -1,19 +1,17 @@
-unsigned short *video = (unsigned short *)0xB8000; // We could also use the virtual address 0xC00B8000
-unsigned char attrib = 0xF; // White text on black background
+unsigned short *video = (unsigned short *)0xB8000;
+unsigned char attrib = 0xF;
 
 void gdt_install();
 void init_paging();
 
 
 void func1() {
-    int a = 1;
 }
 
 int func2() {
     return 2;
 }
 
-// Clears the screen
 void cls()
 {
     int i = 0;
@@ -21,7 +19,6 @@ void cls()
         video[i] = (attrib << 8) | 0;
 }
 
-// Prints the welcome message ;)
 void helloworld()
 {
     char msg[] = "Hello, World!";
@@ -31,7 +28,7 @@ void helloworld()
 }
 
 void main() {
-    // FIRST enable paging and THEN load the real GDT!
+     /* FIRST enable paging and THEN load the real GDT! */
     init_paging();
     gdt_install();
 
