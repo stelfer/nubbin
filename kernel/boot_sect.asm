@@ -24,7 +24,7 @@ load_kernel:
         mov bx, MSG_LOAD_KERNEL
         call print_string
 
-        ;; disk_load loads into es:bx
+        ;; disk_load loads into es:bx -> 0x00100000
         mov bx, 0xffff
         mov es, bx
         mov bx, 0x10
@@ -40,11 +40,11 @@ load_kernel:
 BEGIN_PM:
         mov ebx, MSG_PROT_MODE
         call print_string_pm
-
-        call 0x00100000
+        
+        call START
         jmp $
 
-
+START equ 0x00100000
 BOOT_DRIVE db 0
 MSG_REAL_MODE db "Started in 16-bit Real Mode", 0
 MSG_PROT_MODE db "Landed in 32-bit Protected Mode", 0

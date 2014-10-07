@@ -32,8 +32,8 @@ void helloworld()
 
 void main() {
     // FIRST enable paging and THEN load the real GDT!
-    /* init_paging(); */
-    /* gdt_install(); */
+    init_paging();
+    gdt_install();
 
     cls();
     helloworld();

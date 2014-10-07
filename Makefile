@@ -44,7 +44,7 @@ kernel/kernel.bin: kernel/kernel_entry.o $(OBJS)
 	$(LD) -m elf_i386 -o $@ -Tkernel/link.ld $^ --oformat binary 
 
 kernel/kernel_entry.o: kernel/kernel_entry.asm
-	$(NASM) -f elf -o $@ $<
+	$(NASM) -f elf32 -o $@ $<
 
 os-image: kernel/boot_sect.bin kernel/kernel.bin
 	cat $^ > $@
