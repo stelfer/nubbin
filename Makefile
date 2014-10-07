@@ -78,7 +78,7 @@ kernel/%.o : kernel/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 kernel/%.d : kernel/%.c
-	$(MAKEDEPEND) $< > $@
+	@$(MAKEDEPEND) $< > $@
 
 clean:
 	rm -f *.bin *~ *.o $(ALL) $(DEPFILES)
