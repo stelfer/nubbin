@@ -4,9 +4,12 @@
 #define kmalloc malloc
 #define kfree free
 
-#include <list.h>
+#include <kernel.h>
+#include <kernel/list.h>
 #include <colors.h>
 
+int printf(const char* format, ...);
+int puts(const char* s);
 
 typedef int (*__test)(void);
 struct test {
@@ -55,6 +58,13 @@ static struct test first_test = { LIST_INIT(first_test.list), 0, 0, 0};
             return TEST_FAILURE;                                        \
         }                                                               \
     } while (0)
+
+#define EXPECT_STREQ(x, y, n) do {                                      \
+        if (memcmp((x), (y), (n))) {                                    \
+            LOG_FAILURE("(%s) != (%s)", STRINGIFY(x), STRINGIFY(y));    \
+            return TEST_FAILURE;                                        \
+        }                                                               \
+    } while(0)
 
 #define TEST(mod, x)                                                      \
     struct test TEST_struct_##x = {LIST_INIT(TEST_struct_##x.list), 0, 0}; \
