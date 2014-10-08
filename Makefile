@@ -39,7 +39,9 @@ CFLAGS 			= \
 
 HOST_CFLAGS		= $(INCLUDES) $(WARN_FLAGS) -ffreestanding
 
-KERNEL_SOURCES 	= $(wildcard kernel/*.c drivers/*.c)
+#KERNEL_SOURCES 	= $(wildcard kernel/*.c drivers/*.c)
+KERNEL_SOURCES = kernel/gdt.c kernel/kernel.c kernel/low_level.c kernel/mem.c kernel/printf.c
+
 KERNEL_OBJS 	= $(KERNEL_SOURCES:.c=.o)
 
 TEST_SOURCES 	= $(wildcard kernel/test/*.c)
