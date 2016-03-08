@@ -1,7 +1,7 @@
-toolchain/
 os-image
 **/*~
 **/*.d
 **/*.o
 **/*.bin
 **/*.test
+defaultlibs
