@@ -15,13 +15,6 @@
 
 typedef __builtin_va_list va_list;
 
-extern
-int ksnprintf(char* buf, size_t size, const char* fmt, ...)
-    __printf(3,4);
-extern
-int kvsnprintf(char* buf, size_t size, const char* fmt, va_list args)
-    __printf(3,0);
-
 void* __must_check kmalloc(size_t size);
 
 void kfree(void* mem);
