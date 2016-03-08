@@ -46,7 +46,7 @@ HOST_CFLAGS		 = $(INCLUDES) $(WARN_FLAGS) -ffreestanding
 KERNEL_SOURCES  	:= kernel/gdt.c kernel/kernel.c kernel/low_level.c kernel/mem.c
 KERNEL_OBJS 		 = $(KERNEL_SOURCES:.c=.o)
 
-KERNEL_LD_OPTS		:= -nostdlib -nostartfiles -nodefaultlibs -s
+KERNEL_LD_OPTS		:= -nostdlib -nostartfiles -nodefaultlibs
 
 
 TEST_SOURCES 		:= #$(wildcard kernel/test/*.c)
@@ -70,7 +70,7 @@ kernel/asm/boot.o: kernel/asm/boot.asm
 	$(NASM) $< -f bin -o $@
 
 kernel/asm/kernel.bin: kernel/asm/kernel.o $(KERNEL_OBJS)
-	$(LD) -m elf_i386 -o $@ -Tkernel/link.ld $^ $(KERNEL_LD_OPTS) --oformat binary 
+	$(LD) -m elf_i386 -Tkernel/link.ld $^ $(KERNEL_LD_OPTS) -o $@ --oformat binary
 
 kernel/asm/kernel.o: kernel/asm/kernel.asm
 	$(NASM) -f elf32 -o $@ $<
