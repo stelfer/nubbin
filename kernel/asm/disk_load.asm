@@ -25,7 +25,7 @@ wrong_bytes_disk_error:
         call print_string
         jmp $
 
-%include "print_string.asm"
+%include "nubbin/kernel/asm/print_string.asm"
         
 DISK_ERROR_MSG:
         db "Disk read error!", 0

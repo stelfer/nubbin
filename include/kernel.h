@@ -1,9 +1,9 @@
 #ifndef _KERNEL_H
 #define _KERNEL_H
 
-#include <kernel/types.h>
-#include <kernel/compiler.h>
-#include <kernel/macro.h>
+#include <nubbin/kernel/types.h>
+#include <nubbin/kernel/compiler.h>
+#include <nubbin/kernel/macro.h>
 
 #include <stdarg.h>
 

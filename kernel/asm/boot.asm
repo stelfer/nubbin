@@ -34,7 +34,7 @@ init_pm:
         call START              ; Jump to the kernel entry point in kernel.asm
         jmp $                   ; For safety
 
-%include "disk_load.asm"
+%include "nubbin/kernel/asm/disk_load.asm"
 
 ;; Initial GDT
 gdt0_start:

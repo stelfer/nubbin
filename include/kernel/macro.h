@@ -1,7 +1,7 @@
 #ifndef _MACRO_H
 #define _MACRO_H
 
-#include <kernel/types.h>
+#include <nubbin/kernel/types.h>
 
 #define STRINGIFY(s) __STR(s)
 #define __STR(s) #s
