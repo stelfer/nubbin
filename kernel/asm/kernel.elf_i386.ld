@@ -1,10 +1,15 @@
 
 OUTPUT_FORMAT("elf32-i386")
-ENTRY(start)
+ENTRY(_start)
 
 SECTIONS
 {
 	. = 0x100000;
+
+	.multiboot :
+	{
+		*(.multiboot)
+	}
 
 	.setup :
 	{
@@ -18,13 +23,13 @@ SECTIONS
 		*(.text)
 	}
 
-	.data ALIGN (4096) : AT(ADDR(.data) - 0xC0000000)
+	.data ALIGN (4K) : AT(ADDR(.data) - 0xC0000000)
 	{
 		*(.data)
 		*(.rodata*)
 	}
 
-	.bss ALIGN (4096) : AT(ADDR(.bss) - 0xC0000000)
+	.bss ALIGN (4K) : AT(ADDR(.bss) - 0xC0000000)
 	{
 		*(COMMON*)
 		*(.bss*)

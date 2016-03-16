@@ -21,7 +21,7 @@ KERNEL_BIN		:= build/nubbin/kernel/asm/kernel.bin
 BOOT_LOADER		:= build/nubbin/kernel/asm/boot.bin
 
 nubbin-clean:
-	rm -f $(OS_IMAGE) $(KERNEL_OBJS) $(patsubst %.o,%.d,$(KERNEL_OBJS)) $(KERNEL) $(BOOT_LOADER)
+	rm -f $(OS_IMAGE) $(KERNEL_OBJS) $(patsubst %.o,%.d,$(KERNEL_OBJS)) $(KERNEL) $(BOOT_LOADER) $(KERNEL_BIN)
 
 TESTS		:= 
 

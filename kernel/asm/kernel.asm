@@ -1,11 +1,20 @@
 [bits 32]
 [extern main]                   ; Export our C entry point
-[global start]
+[global _start]
 
-;; the linker will map .setup at offset 0x00100000
+[section .multiboot]
+%include "nubbin/kernel/asm/multiboot1.asm"
+	
+;; the linker will map .setup at offset 0x00100000 + the header length
 [section .setup]
-start:  
+_start:  
         lgdt [gdt1_descriptor]
+	;; Check multiboot
+	cmp eax, MB_MAGIC
+	jz multiboot_ok
+	mov al, "D"
+	jmp error
+multiboot_ok:	
         mov ax, 0x10
         mov ds, ax
         mov es, ax
@@ -16,6 +25,27 @@ start:
         ;;  jump to the higher half kernel
         jmp 0x08:higherhalf
 
+error:
+	mov ebx, 0xb8000
+
+	;; clear the screen
+	mov ch, 0		;clear
+	mov edx, 80*25
+cl_loop:
+	mov cl, 0x20
+	mov [ebx + edx], cx
+	dec edx
+	cmp edx, -1
+	jnz cl_loop
+	
+	mov cl, "E"
+	mov ch, 3		;cyan
+	mov [ebx], cx
+	add ebx, 2
+	mov ah, 4		;red
+	mov [ebx], ax
+	hlt
+	
 ;;; The linker will map .text to the higher offset + 0x40000000
 [section .text]
 higherhalf:

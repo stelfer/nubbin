@@ -1,6 +1,6 @@
 [org 0x7c00]
 [bits 16]
-START equ 0x00100000
+START equ 0x00100000 + 12
         
         ;; disk_load loads into es:bx -> 0x00100000
         mov bx, 0xffff
@@ -30,7 +30,8 @@ init_pm:
         mov es, ax
         mov fs, ax
         mov gs, ax
-        
+
+        mov eax, 0x2BADB002	; Make kernel think we are a multiboot loader
         call START              ; Jump to the kernel entry point in kernel.asm
         jmp $                   ; For safety
 
