@@ -28,8 +28,8 @@ multiboot_ok:
 	jz .no_long_mode       ; If it's not set, there is no long mode
 	jmp long_mode_ok
 .no_long_mode:
-	;; mov al, "L"
-	;; jmp error
+	mov al, "L"
+	jmp error
 
 long_mode_ok:	
 	
