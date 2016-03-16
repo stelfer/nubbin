@@ -8,13 +8,33 @@
 ;; the linker will map .setup at offset 0x00100000 + the header length
 [section .setup]
 _start:  
-        lgdt [gdt1_descriptor]
 	;; Check multiboot
 	cmp eax, MB_MAGIC
 	jz multiboot_ok
 	mov al, "D"
 	jmp error
 multiboot_ok:	
+
+	;; Check for long mode
+	mov eax, 0x80000000    ; implicit argument for cpuid
+	cpuid                  ; get highest supported argument
+	cmp eax, 0x80000001    ; it needs to be at least 0x80000001
+	jb .no_long_mode       ; if it's less, the CPU is too old for long mode
+
+				; use extended info to test if long mode is available
+	mov eax, 0x80000001    ; argument for extended processor info
+	cpuid                  ; returns various feature bits in ecx and edx
+	test edx, 1 << 29      ; test if the LM-bit is set in the D-register
+	jz .no_long_mode       ; If it's not set, there is no long mode
+	jmp long_mode_ok
+.no_long_mode:
+	;; mov al, "L"
+	;; jmp error
+
+long_mode_ok:	
+	
+        lgdt [gdt1_descriptor]
+	
         mov ax, 0x10
         mov ds, ax
         mov es, ax
