@@ -5,7 +5,8 @@ TARGET_CCWARN 		+= -Wno-unused-function -Wno-unused-variable -Wno-macro-redefine
 TARGET_CCFLAGS		+= -nostdlib -fno-builtin -fno-stack-protector -ffreestanding
 
 QEMU			:= /usr/local/bin/qemu-system-i386
-QEMU_ARGS		:= -boot order=a -fda 
+QEMU_IMAGE_ARGS		:= -boot order=a -fda
+QEMU_KERNEL_ARGS	:= -kernel
 
 KERNEL_OBJS 		:= 				\
 			build/nubbin/kernel/gdt.o	\
@@ -16,7 +17,7 @@ KERNEL_OBJS 		:= 				\
 OS_IMAGE		:= build/nubbin/os-image
 
 KERNEL			:= build/nubbin/kernel/asm/kernel.$(TARGET_FORMAT)
-
+KERNEL_BIN		:= build/nubbin/kernel/asm/kernel.bin
 BOOT_LOADER		:= build/nubbin/kernel/asm/boot.bin
 
 nubbin-clean:
@@ -26,11 +27,18 @@ TESTS		:=
 
 $(KERNEL): $(KERNEL_OBJS)
 
-$(OS_IMAGE) : $(BOOT_LOADER) $(KERNEL)
+$(KERNEL_BIN) : $(KERNEL)
+	$(TARGET_OBJCOPY) -O binary $< $@
+
+$(OS_IMAGE) : $(BOOT_LOADER) $(KERNEL_BIN)
 	cat $^ > $@
 
 
 .PHONY: run-image
 run-image: $(OS_IMAGE)
-	$(QEMU) $(QEMU_ARGS) $<
+	$(QEMU) $(QEMU_IMAGE_ARGS) $<
+
+.PHONY: run-kernel
+run-kernel: $(KERNEL)
+	$(QEMU) $(QEMU_KERNEL_ARGS) $<
 
