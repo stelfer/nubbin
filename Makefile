@@ -7,17 +7,30 @@ TARGET_CCFLAGS		+= -nostdlib -fno-builtin -fno-stack-protector -ffreestanding
 QEMU			:= /usr/local/bin/qemu-system-i386
 QEMU_ARGS		:= -boot order=a -fda 
 
-KERNEL_OBJS 		:= build/nubbin/kernel/gdt.o build/nubbin/kernel/kernel.o build/nubbin/kernel/low_level.o build/nubbin/kernel/mem.o
+KERNEL_OBJS 		:= 				\
+			build/nubbin/kernel/gdt.o	\
+			build/nubbin/kernel/kernel.o	\
+			build/nubbin/kernel/low_level.o	\
+			build/nubbin/kernel/mem.o
+
+OS_IMAGE		:= build/nubbin/os-image
+
+KERNEL			:= build/nubbin/kernel/asm/kernel.$(TARGET_FORMAT)
+
+BOOT_LOADER		:= build/nubbin/kernel/asm/boot.bin
 
 nubbin-clean:
-	echo "CLEAN"
+	rm -f $(OS_IMAGE) $(KERNEL_OBJS) $(patsubst %.o,%.d,$(KERNEL_OBJS)) $(KERNEL) $(BOOT_LOADER)
 
-build/%.$(TARGET_ARCH): build/%.$(TARGET_ARCH).o $(KERNEL_OBJS) | %.elf_i386.ld $(DEPDIR)/%.d
-	$(TARGET_LD) -m elf_i386 -T$(*).elf_i386.ld $^ $(KERNEL_LD_OPTS) -o $@ --oformat binary
+TESTS		:= 
 
-build/nubbin/os-image : build/nubbin/kernel/asm/boot.bin build/nubbin/kernel/asm/kernel.$(TARGET_ARCH)
+$(KERNEL): $(KERNEL_OBJS)
+
+$(OS_IMAGE) : $(BOOT_LOADER) $(KERNEL)
 	cat $^ > $@
 
-run-image: build/nubbin/os-image
+
+.PHONY: run-image
+run-image: $(OS_IMAGE)
 	$(QEMU) $(QEMU_ARGS) $<
 
