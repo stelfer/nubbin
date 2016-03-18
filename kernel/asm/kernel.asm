@@ -2,36 +2,16 @@
 [extern main]                   ; Export our C entry point
 [global _start]
 
-[section .multiboot]
-%include "nubbin/kernel/asm/multiboot1.asm"
-	
-;; the linker will map .setup at offset 0x00100000 + the header length
+;; the linker will map .setup at offset 0x00100000
 [section .setup]
 _start:  
-	;; Check multiboot
-	cmp eax, MB_MAGIC
-	jz multiboot_ok
-	mov al, "D"
-	jmp error
-multiboot_ok:	
 
-	;; Check for long mode
-	mov eax, 0x80000000    ; implicit argument for cpuid
-	cpuid                  ; get highest supported argument
-	cmp eax, 0x80000001    ; it needs to be at least 0x80000001
-	jb .no_long_mode       ; if it's less, the CPU is too old for long mode
+	;; Setup a temporary stack
+	mov esp, tmp_stack
+	mov ebp, esp
 
-				; use extended info to test if long mode is available
-	mov eax, 0x80000001    ; argument for extended processor info
-	cpuid                  ; returns various feature bits in ecx and edx
-	test edx, 1 << 29      ; test if the LM-bit is set in the D-register
-	jz .no_long_mode       ; If it's not set, there is no long mode
-	jmp long_mode_ok
-.no_long_mode:
-	mov al, "L"
-	jmp error
-
-long_mode_ok:	
+	call clear_screen
+	call check_long_mode
 	
         lgdt [gdt1_descriptor]
 	
@@ -45,19 +25,42 @@ long_mode_ok:
         ;;  jump to the higher half kernel
         jmp 0x08:higherhalf
 
-error:
-	mov ebx, 0xb8000
 
-	;; clear the screen
+check_long_mode:
+	pushad
+	mov eax, 0x80000000    ; implicit argument for cpuid
+	cpuid                  ; get highest supported argument
+	cmp eax, 0x80000001    ; it needs to be at least 0x80000001
+	jb .no_long_mode       ; if it's less, the CPU is too old for long mode
+
+				; use extended info to test if long mode is available
+	mov eax, 0x80000001    ; argument for extended processor info
+	cpuid                  ; returns various feature bits in ecx and edx
+	test edx, 1 << 29      ; test if the LM-bit is set in the D-register
+	jz .no_long_mode       ; If it's not set, there is no long mode
+	popad
+	ret
+.no_long_mode:
+	mov al, "L"
+	jmp error
+	
+clear_screen:
+	pushad
+	mov ebx, 0xb8000
 	mov ch, 0		;clear
 	mov edx, 80*25
-cl_loop:
+.loop:
 	mov cl, 0x20
 	mov [ebx + edx], cx
 	dec edx
 	cmp edx, -1
-	jnz cl_loop
+	jnz .loop
+	popad
+	ret
 	
+error:
+	call clear_screen
+	mov ebx, 0xb8000
 	mov cl, "E"
 	mov ch, 3		;cyan
 	mov [ebx], cx
@@ -65,6 +68,10 @@ cl_loop:
 	mov ah, 4		;red
 	mov [ebx], ax
 	hlt
+
+tmp_stack_bottom:
+	resb 64
+tmp_stack:	
 	
 ;;; The linker will map .text to the higher offset + 0x40000000
 [section .text]
