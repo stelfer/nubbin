@@ -11,8 +11,9 @@ QEMU_KERNEL_ARGS	:= -kernel
 KERNEL_OBJS 		:= 				\
 			build/nubbin/kernel/gdt.o	\
 			build/nubbin/kernel/kernel.o	\
-			build/nubbin/kernel/low_level.o	\
-			build/nubbin/kernel/mem.o
+			build/nubbin/kernel/low_level.o
+
+# build/nubbin/kernel/mem.o
 
 OS_IMAGE		:= build/nubbin/os-image
 
@@ -22,6 +23,8 @@ BOOT_LOADER		:= build/nubbin/kernel/asm/boot.bin
 
 nubbin-clean:
 	rm -f $(OS_IMAGE) $(KERNEL_OBJS) $(patsubst %.o,%.d,$(KERNEL_OBJS)) $(KERNEL) $(BOOT_LOADER) $(KERNEL_BIN)
+
+TARGET_CCFLAGS		+= -mcmodel=large
 
 TESTS		:= 
 

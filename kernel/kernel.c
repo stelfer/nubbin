@@ -6,7 +6,7 @@ unsigned short *video = (unsigned short *)0xB8000;
 unsigned char attrib = 0xF;
 
 void gdt_install();
-void init_paging();
+/* void init_paging(); */
 
 
 void func1() {
@@ -33,9 +33,9 @@ void helloworld()
 
 void main() {
      /* FIRST enable paging and THEN load the real GDT! */
-    init_paging();
     gdt_install();
 
+    /* init_paging(); */
     cls();
     helloworld();
     for(;;);

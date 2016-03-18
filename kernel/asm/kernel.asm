@@ -78,9 +78,21 @@ higherhalf:
         mov gs, ax
         mov ss, ax
 
+	
         mov esp, sys_stack      ; set up a new stack
         mov ebp, esp
-        call main
+
+	mov ax, 0x02
+	mov ds, ax
+	mov al, "J"
+	mov ebx, 0xb8000
+	mov ah, 3
+	mov [ebx], ax
+	mov ax, 0x10
+	mov ds, ax
+	
+
+	;; call main
         jmp $
 
 ;;  This allows us to set the GDT from C
