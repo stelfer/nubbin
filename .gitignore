@@ -6,3 +6,5 @@ os-image
 **/*.test
 defaultlibs
 build/
+.desktops/
+
