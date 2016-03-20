@@ -25,7 +25,7 @@ rm_start:
         mov eax, cr0
         or eax, 0x1
         mov cr0, eax            ; Set protected mode
-        jmp 0x08:init_pm        ; Long jump to 32 bits
+        jmp 0x08:pm_init        ; Long jump to 32 bits
 
 a20_error:
 	mov bx, A20_ERR_MSG
@@ -86,7 +86,7 @@ tmp_stack_bottom:
 tmp_stack:	
 
 [bits 32]
-init_pm:
+pm_init:
         ;; 32 Bits mode here, fix the registers as pointing
         ;; To the data section of the current GDT
         mov ax, 0x10
