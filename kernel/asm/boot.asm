@@ -18,7 +18,7 @@ START equ 0x00100000
 	cli
 	call check_a20
 	cmp ax, 1
-	jne error
+	jne a20_error
 
 	lgdt [gdt0_descriptor]  ; Load the GDT
 
@@ -27,16 +27,10 @@ START equ 0x00100000
         mov cr0, eax            ; Set protected mode
         jmp 0x08:init_pm        ; Long jump to 32 bits
 
-error:
-	mov bx, 0xb8000
-	mov cl, "A"
-	mov ch, 3		;cyan
-	mov [bx], cx
-	add bx, 2
-	mov ah, 4		;red
-	mov [bx], ax
-	hlt
-	
+a20_error:
+	mov bx, A20_ERR_MSG
+	call print_string_rm
+	jmp $
 	
 check_a20:
 	pushf
@@ -119,6 +113,8 @@ gdt0_descriptor:
         dw gdt0_end - gdt0_start - 1
         dd gdt0_start
 
+A20_ERR_MSG   db "A20 Not Enabled", 0
+	
 ;; Fill out to a full sector
 times 510-($-$$) db 0
 dw 0xaa55
