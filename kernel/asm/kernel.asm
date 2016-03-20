@@ -1,31 +1,31 @@
-[bits 32]
-[extern main]                   ; Export our C entry point
-[global _start]
+bits 32
 
-;; the linker will map .setup at offset 0x00100000
-[section .setup]
-_start:  
-
-	;; Setup a temporary stack
+extern main
+extern lm_start
+global pm_start
+	
+;;; We are loaded at 0x100000
+section .setup
+pm_start:  
 	mov esp, tmp_stack
 	mov ebp, esp
 
-	call clear_screen
+	call clear_screen_pm
 	call check_long_mode
+	call setup_page_tables
+	call enable_paging
 	
-        lgdt [gdt1_descriptor]
-	
+	lgdt [gdt1_descriptor]
         mov ax, 0x10
         mov ds, ax
         mov es, ax
         mov fs, ax
         mov gs, ax
         mov ss, ax
+	jmp 0x08:lm_start
+	jmp $			;no-return
 
-        ;;  jump to the higher half kernel
-        jmp 0x08:higherhalf
-
-
+;;; Ensure that we have long mode
 check_long_mode:
 	pushad
 	mov eax, 0x80000000    ; implicit argument for cpuid
@@ -41,95 +41,93 @@ check_long_mode:
 	popad
 	ret
 .no_long_mode:
-	mov al, "L"
-	jmp error
-	
-clear_screen:
-	pushad
-	mov ebx, 0xb8000
-	mov ch, 0		;clear
-	mov edx, 80*25
-.loop:
-	mov cl, 0x20
-	mov [ebx + edx], cx
-	dec edx
-	cmp edx, -1
-	jnz .loop
-	popad
-	ret
-	
-error:
-	call clear_screen
-	mov ebx, 0xb8000
-	mov cl, "E"
-	mov ch, 3		;cyan
-	mov [ebx], cx
-	add ebx, 2
-	mov ah, 4		;red
-	mov [ebx], ax
+	mov ebx, NO_LONG_MODE_MSG
+	call print_string_pm
 	hlt
-
-tmp_stack_bottom:
-	resb 64
-tmp_stack:	
 	
-;;; The linker will map .text to the higher offset + 0x40000000
-[section .text]
-higherhalf:
-        ;; from now the CPU will translate automatically every address
-        ;; by adding the base 0x40000000
-        mov ax, 0x10
-        mov ds, ax
-        mov es, ax
-        mov fs, ax
-        mov gs, ax
-        mov ss, ax
+;;; Set up 2MiB page identity mappings
+setup_page_tables:
+    lea eax, [p3_table]
+    or eax, 0b11
+    mov [p4_table], eax
+    lea eax, [p2_table]
+    or eax, 0b11
+    mov [p3_table], eax
 
-	
-        mov esp, sys_stack      ; set up a new stack
-        mov ebp, esp
+    mov ecx, 0
+.loop:
+    ; map ecx-th P2 entry to a huge page that starts at address 2MiB*ecx
+    mov eax, 0x200000  ; 2MiB
+    mul ecx            ; start address of ecx-th page
+    or eax, 0b10000011 ; present + writable + huge
+    mov [p2_table + ecx * 8], eax ; map ecx-th entry
 
-	mov ax, 0x02
-	mov ds, ax
-	mov al, "J"
-	mov ebx, 0xb8000
-	mov ah, 3
-	mov [ebx], ax
-	mov ax, 0x10
-	mov ds, ax
-	
+    inc ecx
+    cmp ecx, 512
+    jne .loop
 
-	;; call main
-        jmp $
+    ret
 
-;;  This allows us to set the GDT from C
-[global gdt_flush]
-[extern gp]
-gdt_flush:
-        lgdt [gp]
-        mov ax, 0x10
-        mov ds, ax
-        mov es, ax
-        mov fs, ax
-        mov gs, ax
-        mov ss, ax
-        jmp 0x08:gdt_flush_ret
-gdt_flush_ret:
-        ret
+enable_paging:
+    ; load P4 to cr3 register (cpu uses this to access the P4 table)
+    lea eax, [p4_table]
+    mov cr3, eax
 
-[section .setup]
+    ; enable PAE-flag in cr4 (Physical Address Extension)
+    mov eax, cr4
+    or eax, 1 << 5
+    mov cr4, eax
+
+    ; set the long mode bit in the EFER MSR (model specific register)
+    mov ecx, 0xC0000080
+    rdmsr
+    or eax, 1 << 8
+    wrmsr
+
+    ; enable paging in the cr0 register
+    mov eax, cr0
+    or eax, 1 << 31
+    mov cr0, eax
+
+    ret
+
+%include "nubbin/kernel/asm/print_pm.asm"
+
+NO_LONG_MODE_MSG db "Err:No Long Mode", 0
+IN_PROT_MODE_MSG db "In Protected Mode",0
 gdt1_start:
-        ; null
         dd 0, 0
-        ; code selector 0x08: base 0x40000000, limit 0xFFFFFFFF, type 0x9A, granularity 0xCF
-        db 0xFF, 0xFF, 0, 0, 0, 10011010b, 11001111b, 0x40
-        ; data selector 0x10: base 0x40000000, limit 0xFFFFFFFF, type 0x92, granularity 0xCF            
-        db 0xFF, 0xFF, 0, 0, 0, 10010010b, 11001111b, 0x40 
+gdt1_code:	
+	dw 0xffff
+	dw 0x0000
+	db 0x00
+	db 10011010b
+	db 11101111b
+	db 0x00
+gdt1_data:	
+	dw 0xffff
+	dw 0x0000
+	db 0x00
+	db 10010010b
+	db 11101111b
+	db 0x00
 gdt1_end:        
 gdt1_descriptor:
         dw gdt1_end - gdt1_start - 1
         dd gdt1_start                  
-        
-[section .bss]
-        resb 0x1000
+tmp_stack_start:
+	times 64 db 0
+tmp_stack:	
+
+
+section .bss
+align 0x1000
+p4_table:
+	resb 0x1000
+p3_table:
+	resb 0x1000
+p2_table:
+	resb 0x1000
+stack_top:
+	resb 0x1000
 sys_stack:      
