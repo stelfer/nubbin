@@ -1,5 +1,5 @@
-[org 0x7c00]
-[bits 16]
+org 0x7c00
+bits 16
 START equ 0x00100000
 rm_start:	
         ;; disk_load loads into es:bx -> 0x00100000
@@ -85,7 +85,7 @@ tmp_stack_bottom:
 	resb 64
 tmp_stack:	
 
-[bits 32]
+bits 32
 pm_init:
         ;; 32 Bits mode here, fix the registers as pointing
         ;; To the data section of the current GDT
