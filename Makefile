@@ -17,13 +17,13 @@ OS_IMAGE		:= build/nubbin/os-image
 
 KERNEL			:= build/nubbin/kernel/asm/kernel.$(TARGET_FORMAT)
 KERNEL_BIN		:= build/nubbin/kernel/asm/kernel.bin
-BOOT_LOADER		:= build/nubbin/kernel/asm/boot.bin
+RM_START_LOADER		:= build/nubbin/kernel/asm/rm_start.bin
 
 nubbin-clean:
-	rm -f $(OS_IMAGE) $(KERNEL) $(BOOT_LOADER) $(KERNEL_BIN)
+	rm -f $(OS_IMAGE) $(KERNEL) $(RM_START_LOADER) $(KERNEL_BIN)
 	rm -f $(KERNEL_OBJS)
 	rm -f $(patsubst build/%.o,build/deps/%.d,$(KERNEL_OBJS))
-	rm -f $(patsubst build/%.bin,build/deps/%.d,$(KERNEL_BIN) $(BOOT_LOADER)) 
+	rm -f $(patsubst build/%.bin,build/deps/%.d,$(KERNEL_BIN) $(RM_START_LOADER)) 
 
 TARGET_CCFLAGS		+= -mcmodel=large
 
@@ -34,7 +34,7 @@ $(KERNEL): $(KERNEL_OBJS)
 $(KERNEL_BIN) : $(KERNEL)
 	$(TARGET_OBJCOPY) -O binary $< $@
 
-$(OS_IMAGE) : $(BOOT_LOADER) $(KERNEL_BIN)
+$(OS_IMAGE) : $(RM_START_LOADER) $(KERNEL_BIN)
 	cat $^ > $@
 
 

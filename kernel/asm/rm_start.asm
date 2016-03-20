@@ -1,7 +1,7 @@
 [org 0x7c00]
 [bits 16]
 START equ 0x00100000
-        
+rm_start:	
         ;; disk_load loads into es:bx -> 0x00100000
         mov bx, 0xffff
         mov es, bx
