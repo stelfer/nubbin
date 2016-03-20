@@ -9,18 +9,18 @@ SECTIONS
 		*(.setup)
 	}
 
-	.text ALIGN (4K):
+	.text :
 	{
 		*(.text)
 	}
 
-	.data ALIGN (4K) :
+	.data :
 	{
 		*(.data)
 		*(.rodata*)
 	}
 
-	.bss ALIGN (4K) :
+	.bss :
 	{
 		*(COMMON*)
 		*(.bss*)
