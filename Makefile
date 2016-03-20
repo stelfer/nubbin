@@ -5,7 +5,7 @@ TARGET_CCWARN 		+= -Wno-unused-function -Wno-unused-variable -Wno-macro-redefine
 TARGET_CCFLAGS		+= -nostdlib -fno-builtin -fno-stack-protector -ffreestanding
 
 QEMU			:= /usr/local/bin/qemu-system-x86_64
-QEMU_IMAGE_ARGS		:= -boot order=a -fda
+QEMU_IMAGE_ARGS		:= -m 1G -boot order=a -fda
 QEMU_KERNEL_ARGS	:= -kernel
 
 KERNEL_OBJS 		:= 				\
