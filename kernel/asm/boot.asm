@@ -7,7 +7,7 @@ START equ 0x00100000
         mov es, bx
         mov bx, 0x10
 
-        mov dh, 15                  ; read 15 sectors 
+        mov dh, 30                  ; read 15 sectors 
         call disk_load
         
         ;; Switch to protected mode
