@@ -20,7 +20,10 @@ KERNEL_BIN		:= build/nubbin/kernel/asm/kernel.bin
 BOOT_LOADER		:= build/nubbin/kernel/asm/boot.bin
 
 nubbin-clean:
-	rm -f $(OS_IMAGE) $(KERNEL_OBJS) $(patsubst %.o,%.d,$(KERNEL_OBJS)) $(KERNEL) $(BOOT_LOADER) $(KERNEL_BIN)
+	rm -f $(OS_IMAGE) $(KERNEL) $(BOOT_LOADER) $(KERNEL_BIN)
+	rm -f $(KERNEL_OBJS)
+	rm -f $(patsubst build/%.o,build/deps/%.d,$(KERNEL_OBJS))
+	rm -f $(patsubst build/%.bin,build/deps/%.d,$(KERNEL_BIN) $(BOOT_LOADER)) 
 
 TARGET_CCFLAGS		+= -mcmodel=large
 
