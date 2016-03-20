@@ -15,26 +15,26 @@ KERNEL_OBJS 		:= 				\
 
 OS_IMAGE		:= build/nubbin/os-image
 
-KERNEL			:= build/nubbin/kernel/asm/kernel.$(TARGET_FORMAT)
-KERNEL_BIN		:= build/nubbin/kernel/asm/kernel.bin
-RM_START_LOADER		:= build/nubbin/kernel/asm/rm_start.bin
+PM_START		:= build/nubbin/kernel/asm/pm_start.$(TARGET_FORMAT)
+PM_START_BIN		:= build/nubbin/kernel/asm/pm_start.bin
+RM_START		:= build/nubbin/kernel/asm/rm_start.bin
 
 nubbin-clean:
-	rm -f $(OS_IMAGE) $(KERNEL) $(RM_START_LOADER) $(KERNEL_BIN)
+	rm -f $(OS_IMAGE) $(PM_START) $(RM_START) $(PM_START_BIN)
 	rm -f $(KERNEL_OBJS)
 	rm -f $(patsubst build/%.o,build/deps/%.d,$(KERNEL_OBJS))
-	rm -f $(patsubst build/%.bin,build/deps/%.d,$(KERNEL_BIN) $(RM_START_LOADER)) 
+	rm -f $(patsubst build/%.bin,build/deps/%.d,$(PM_START_BIN) $(RM_START)) 
 
 TARGET_CCFLAGS		+= -mcmodel=large
 
 TESTS		:= 
 
-$(KERNEL): $(KERNEL_OBJS)
+$(PM_START): $(KERNEL_OBJS)
 
-$(KERNEL_BIN) : $(KERNEL)
+$(PM_START_BIN) : $(PM_START)
 	$(TARGET_OBJCOPY) -O binary $< $@
 
-$(OS_IMAGE) : $(RM_START_LOADER) $(KERNEL_BIN)
+$(OS_IMAGE) : $(RM_START) $(PM_START_BIN)
 	cat $^ > $@
 
 
@@ -42,7 +42,4 @@ $(OS_IMAGE) : $(RM_START_LOADER) $(KERNEL_BIN)
 run-image: $(OS_IMAGE)
 	$(QEMU) $(QEMU_IMAGE_ARGS) $<
 
-.PHONY: run-kernel
-run-kernel: $(KERNEL)
-	$(QEMU) $(QEMU_KERNEL_ARGS) $<
 
