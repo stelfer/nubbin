@@ -1,7 +1,7 @@
 VIDEO_MEMORY equ 0xb8000
 WHITE_ON_BLACK equ 0x2f
 
-print_hex:
+print_hex_lm:
         mov edi, 17
 .loop:
         cmp edi, 1
@@ -15,7 +15,7 @@ print_hex:
         
 .done:  
         mov rbx, PRINT_HEX_OUT
-        call print_string
+        call print_string_lm
         ret
 
         
@@ -33,7 +33,7 @@ to_ascii:
         or eax, 30h
         ret
 
-print_string:
+print_string_lm:
         lea edx, [VIDEO_MEMORY]
 
 .loop:
