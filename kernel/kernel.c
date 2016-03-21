@@ -1,42 +1,32 @@
-
+/* Copyright (C) 2016 by Soren Telfer - MIT License. See LICENSE.txt */
 
 #include <nubbin/kernel.h>
+#include <nubbin/kernel/console.h>
+#include <nubbin/kernel/string.h>
+#include <nubbin/kernel/memory.h>
 
-unsigned short *video = (unsigned short *)0xB8000;
-unsigned char attrib = 0xF;
-
-void gdt_install();
-void init_paging();
-
-
-void func1() {
-}
-
-int func2() {
-    return 2;
-}
-
-void cls()
+void
+main()
 {
-    int i = 0;
-    for (i = 0; i < 80 * 25; i++)
-        video[i] = (attrib << 8) | 0;
-}
+    const struct mem_info* p = (const struct mem_info*)0x100000;
 
-void helloworld()
-{
-    char msg[] = "Hello, World!";
-    int i;
-    for (i = 0; msg[i] != '\0'; i++)
-        video[i] = (attrib << 8) | msg[i];
-}
+    console_clear();
 
-void main() {
-     /* FIRST enable paging and THEN load the real GDT! */
-    init_paging();
-    gdt_install();
+    char buf[19];
 
-    cls();
-    helloworld();
-    for(;;);
+    console_puts(hexify(p->low_mem, buf, 19));
+    console_puts(hexify(p->high_mem, buf, 19));
+
+    const char* x = hexify(p->size, buf, 19);
+    console_puts(x);
+    unsigned int size = p->size;
+    for (unsigned int i = 0; i < size; ++i) {
+        console_puts("ENTRY: start, length ,flags");
+        console_puts(hexify(p->entries[i].start, buf, 19));
+        console_puts(hexify(p->entries[i].length, buf, 19));
+        console_puts(hexify(p->entries[i].type, buf, 19));
+    }
+
+    for (;;)
+        ;
 }

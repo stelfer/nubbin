@@ -17,15 +17,15 @@ disk_load:
 
 disk_error:
         mov bx, DISK_ERROR_MSG
-        call print_string
+        call print_string_rm
         jmp $
 
 wrong_bytes_disk_error:
         mov bx, WRONG_BYTES_ERROR_MSG
-        call print_string
+        call print_string_rm
         jmp $
 
-%include "nubbin/kernel/asm/print_string.asm"
+%include "nubbin/kernel/asm/print_rm.asm"
         
 DISK_ERROR_MSG:
         db "Disk read error!", 0
