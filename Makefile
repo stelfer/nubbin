@@ -5,14 +5,15 @@ TARGET_CCWARN 		+= -Wno-unused-function -Wno-unused-variable -Wno-macro-redefine
 TARGET_CCFLAGS		+= -nostdlib -fno-builtin -fno-stack-protector -ffreestanding
 
 QEMU			:= /usr/local/bin/qemu-system-x86_64
-QEMU_IMAGE_ARGS		:= -m 1G -boot order=a -fda
+QEMU_IMAGE_ARGS		:= -m 1G  -nographic -boot order=a -fda
 QEMU_KERNEL_ARGS	:= -kernel
 
 KERNEL_OBJS 		:= 					\
 			build/nubbin/kernel/kernel.o		\
-			build/nubbin/kernel/low_level.o 	\
+			build/nubbin/kernel/io.o 		\
 			build/nubbin/kernel/asm/lm_start.o	\
 			build/nubbin/kernel/console.o		\
+			build/nubbin/kernel/serial.o		\
 			build/nubbin/kernel/string.o
 
 OS_IMAGE		:= build/nubbin/os-image
