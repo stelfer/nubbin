@@ -22,6 +22,8 @@ rm_start:
 	cmp ax, 1
 	jne a20_error
 
+	call map_memory
+
 	lgdt [gdt0_descriptor]  ; Load the GDT
 
         mov eax, cr0
@@ -83,6 +85,46 @@ check_a20:
  
 	ret
 
+map_memory:
+	;; Low mem size
+	mov bx, 0xffff
+	mov es, bx
+	mov bx, 0x10
+
+	int 0x12
+	mov [es:bx], ax
+
+	;; High mem size
+	mov ah, 0x88
+	int 0x15
+	add bx, 2
+	mov [es:bx], ax
+
+	mov di, 0x10 + 6
+	xor ebx,ebx
+	mov esi, 0
+.loop:	
+
+	mov eax, 0xe820
+	mov ecx, 20
+	mov edx, 0x534D4150
+	int 0x15
+
+	jc .error		; continuation bit signals error
+	test ebx, ebx
+	je .done
+	inc esi
+	add di, 20
+	jmp .loop
+.error:
+	;; Do something else here?
+.done:
+	mov bx, 0xffff
+	mov es, bx
+	mov bx, 0x14
+	mov [es:bx], si
+	ret
+	
 tmp_stack_bottom:
 	resb 64
 tmp_stack:	
