@@ -126,7 +126,7 @@ map_memory:
 	ret
 	
 tmp_stack_bottom:
-	resb 64
+	times 64 db 0
 tmp_stack:	
 
 bits 32
