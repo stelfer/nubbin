@@ -12,8 +12,3 @@ lm_start:
         mov ss, ax
 	call main
 	jmp $
-
-	
-section .rodata
-global video
-video dd 0x000b8000
