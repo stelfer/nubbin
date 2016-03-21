@@ -20,7 +20,7 @@ PM_START_BIN		:= build/nubbin/kernel/asm/pm_start.bin
 RM_START		:= build/nubbin/kernel/asm/rm_start.bin
 
 nubbin-clean:
-	rm -f $(OS_IMAGE) $(PM_START) $(RM_START) $(PM_START_BIN)
+	rm -f $(OS_IMAGE) $(PM_START) $(PM_START).o $(RM_START) $(PM_START_BIN)
 	rm -f $(KERNEL_OBJS)
 	rm -f $(patsubst build/%.o,build/deps/%.d,$(KERNEL_OBJS))
 	rm -f $(patsubst build/%.bin,build/deps/%.d,$(PM_START_BIN) $(RM_START)) 
