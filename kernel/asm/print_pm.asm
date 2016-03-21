@@ -40,7 +40,7 @@ clear_screen_pm:
 ;;; Prints [edx] to video buffer using
 print_hex_pm:
         pusha
-        mov edi, 5               ; index for PRINT_HEX_OUT, we will decrement
+        mov edi, 9               ; index for PRINT_HEX_OUT, we will decrement
 .loop:
         cmp edi, 1
         je .done
@@ -57,7 +57,7 @@ print_hex_pm:
         popa
         ret
 
-        PRINT_HEX_OUT db '0x0000', 0
+        PRINT_HEX_OUT db '0x00000000', 0
         
 to_ascii_pm:
         ;; Converts the lowest 4 bits of bl to ascii
