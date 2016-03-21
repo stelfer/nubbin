@@ -1,11 +1,13 @@
 org 0x7c00
 bits 16
-START equ 0x00100000
+START   equ 0x001000e8
+
 rm_start:	
-        ;; disk_load loads into es:bx -> 0x00100000
+        ;; disk_load loads into es:bx -> 0x00100080
         mov bx, 0xffff
         mov es, bx
-        mov bx, 0x10
+        mov bx, 0xf8
+
 
         mov dh, 30                  ; read 15 sectors 
         call disk_load
