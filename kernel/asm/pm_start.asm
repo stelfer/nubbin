@@ -55,53 +55,53 @@ check_long_mode:
 	
 ;;; Set up 2MiB page identity mappings
 setup_page_tables:
-    lea eax, [p3_table]
-    or eax, 0b11
-    mov [p4_table], eax
+	lea eax, [p3_table]
+	or eax, 0b11
+	mov [p4_table], eax
 
-    ;; Also map Canonical (negative) higher half to same 1G segment
-    mov [p4_table + 256*8], eax
+	;; Also map Canonical (negative) higher half to same 1G segment
+	mov [p4_table + 256*8], eax
 
-    lea eax, [p2_table]
-    or eax, 0b11
-    mov [p3_table], eax
+	lea eax, [p2_table]
+	or eax, 0b11
+	mov [p3_table], eax
 
-    mov ecx, 0
+	mov ecx, 0
 .loop:
-    ; map ecx-th P2 entry to a huge page that starts at address 2MiB*ecx
-    mov eax, 0x200000  ; 2MiB
-    mul ecx            ; start address of ecx-th page
-    or eax, 0b10000011 ; present + writable + huge
-    mov [p2_table + ecx * 8], eax ; map ecx-th entry
+	;; map ecx-th P2 entry to a huge page that starts at address 2MiB*ecx
+	mov eax, 0x200000  ; 2MiB
+	mul ecx            ; start address of ecx-th page
+	or eax, 0b10000011 ; present + writable + huge
+	mov [p2_table + ecx * 8], eax ; map ecx-th entry
 
-    inc ecx
-    cmp ecx, 512
-    jne .loop
+	inc ecx
+	cmp ecx, 512
+	jne .loop
 
-    ret
+	ret
 
 enable_paging:
-    ; load P4 to cr3 register (cpu uses this to access the P4 table)
-    lea eax, [p4_table]
-    mov cr3, eax
+	;; load P4 to cr3 register (cpu uses this to access the P4 table)
+	lea eax, [p4_table]
+	mov cr3, eax
 
-    ; enable PAE-flag in cr4 (Physical Address Extension)
-    mov eax, cr4
-    or eax, 1 << 5
-    mov cr4, eax
+	;; enable PAE-flag in cr4 (Physical Address Extension)
+	mov eax, cr4
+	or eax, 1 << 5
+	mov cr4, eax
 
-    ; set the long mode bit in the EFER MSR (model specific register)
-    mov ecx, 0xC0000080
-    rdmsr
-    or eax, 1 << 8
-    wrmsr
+	;; set the long mode bit in the EFER MSR (model specific register)
+	mov ecx, 0xC0000080
+	rdmsr
+	or eax, 1 << 8
+	wrmsr
 
-    ; enable paging in the cr0 register
-    mov eax, cr0
-    or eax, 1 << 31
-    mov cr0, eax
+	;; enable paging in the cr0 register
+	mov eax, cr0
+	or eax, 1 << 31
+	mov cr0, eax
 
-    ret
+	ret
 
 %include "nubbin/kernel/asm/print_pm.asm"
 
