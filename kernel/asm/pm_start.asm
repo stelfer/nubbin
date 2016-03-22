@@ -1,20 +1,28 @@
 bits 32
 
-extern main
 extern lm_start
 global pm_start
 	
-;;; We are loaded at 0x100000
 section .setup
 pm_start:  
+	;; 32 Bits mode here, fix the registers as pointing
+        ;; To the data section of the current GDT
+        mov ax, 0x10
+        mov ds, ax
+        mov ss, ax
+        mov es, ax
+        mov fs, ax
+        mov gs, ax
+
+
 	mov esp, tmp_stack
 	mov ebp, esp
-
+	
 	call clear_screen_pm
 	call check_long_mode
 	call setup_page_tables
 	call enable_paging
-	
+
 	lgdt [gdt1_descriptor]
         mov ax, 0x10
         mov ds, ax
@@ -118,7 +126,6 @@ gdt1_descriptor:
 tmp_stack_start:
 	times 64 db 0
 tmp_stack:	
-
 
 section .bss
 align 0x1000

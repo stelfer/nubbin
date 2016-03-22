@@ -1,11 +1,14 @@
-; load DH sections to ES:BX from drive DL
 disk_load:
+	;; [ES:BX] 	= buffer to read to
+	;; CL 		= start sector
+	;; DH		= sectors to read
+	;; DL		= drive
         push dx
-        mov ah, 0x02            ; read sector function
-        mov al, dh              ; bytes to read
-        mov ch, 0h              ; cylinder
-        mov cl, 0x02            ; offset
-        mov dh, 0h              ; head
+        mov ah, 0x02
+        mov al, dh
+        mov ch, 0h
+        ;; mov cl, 0x02            ; offset
+        mov dh, 0h
 
         int 0x13                ; BIOS interrupt
         jc disk_error

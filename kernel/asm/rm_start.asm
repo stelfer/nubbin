@@ -1,17 +1,42 @@
-org 0x7c00
 bits 16
-START   equ 0x001000e8
+extern pm_start
 
+NUM_BIOS_MMAP_ENTRIES equ 20
+	
+section .boot	
 rm_start:	
-        ;; disk_load loads into es:bx -> 0x00100080
+	;; Do two loads here: (1), load the 7 remaining sectors in the .setup section to
+	;; NEXT; (2), load another 30 sectors into START. Everything in NEXT will handle
+	;; our real-mode work
+
+	;; Load to NEXT
+	mov bx, 0x07e0
+	mov es, bx
+	mov bx, 0
+	mov cl, 2
+	mov dh, 7
+	mov dl, 0
+	call disk_load
+
+	;; Load to START
         mov bx, 0xffff
         mov es, bx
-        mov bx, 0xf8
-
-
-        mov dh, 30                  ; read 15 sectors 
+        mov bx, 0x10
+	mov cl, 9
+        mov dh, 15
+	mov dl, 0
         call disk_load
-        
+
+	jmp rm_stage2
+
+%include "nubbin/kernel/asm/disk_load.asm"
+;;; Fill out to a full sector
+times 510-($-$$) db 0
+dw 0xaa55
+
+section .setup
+rm_stage2:	
+	
         ;; Switch to protected mode
         ;; Load the first of three GDT's
 	mov sp, tmp_stack
@@ -22,14 +47,14 @@ rm_start:
 	cmp ax, 1
 	jne a20_error
 
-	call map_memory
+	call read_bios_mmap
 
 	lgdt [gdt0_descriptor]  ; Load the GDT
 
         mov eax, cr0
         or eax, 0x1
         mov cr0, eax            ; Set protected mode
-        jmp 0x08:pm_init        ; Long jump to 32 bits
+        jmp 0x08:pm_start        ; Long jump to 32 bits
 
 a20_error:
 	mov bx, A20_ERR_MSG
@@ -85,22 +110,20 @@ check_a20:
  
 	ret
 
-map_memory:
+read_bios_mmap:
 	;; Low mem size
-	mov bx, 0xffff
-	mov es, bx
-	mov bx, 0x10
-
-	int 0x12
-	mov [es:bx], ax
+	mov [bios_mmap.low_sz], ax
 
 	;; High mem size
 	mov ah, 0x88
 	int 0x15
-	add bx, 2
-	mov [es:bx], ax
+	mov [bios_mmap.high_sz], ax
 
-	mov di, 0x10 + 6
+
+	mov di, 0
+	mov es, di
+	mov di, bios_mmap.tbl_start
+
 	xor ebx,ebx
 	mov esi, 0
 .loop:	
@@ -114,38 +137,33 @@ map_memory:
 	test ebx, ebx
 	je .done
 	inc esi
+	cmp esi, NUM_BIOS_MMAP_ENTRIES
+	je .num_bios_mmap_entries_exceeded
 	add di, 20
+
 	jmp .loop
+.num_bios_mmap_entries_exceeded:
+	mov dx, 0xdead
+	call print_hex_rm
+	jmp $
+.jcerror:
+	mov dx, 0xfeed
+	call print_hex_rm
+	jmp $
 .error:
+	mov dx, 0xdead
+	call print_hex_rm
+	jmp $
+	
 	;; Do something else here?
 .done:
-	mov bx, 0xffff
-	mov es, bx
-	mov bx, 0x14
-	mov [es:bx], si
+	mov [bios_mmap.num_items], esi
 	ret
-	
+
+;; Initial GDT
 tmp_stack_bottom:
 	times 64 db 0
 tmp_stack:	
-
-bits 32
-pm_init:
-        ;; 32 Bits mode here, fix the registers as pointing
-        ;; To the data section of the current GDT
-        mov ax, 0x10
-        mov ds, ax
-        mov ss, ax
-        mov es, ax
-        mov fs, ax
-        mov gs, ax
-
-        call START              ; Jump to the kernel entry point in kernel.asm
-        jmp $                   ; For safety
-
-%include "nubbin/kernel/asm/disk_load.asm"
-
-;; Initial GDT
 gdt0_start:
         dd 0, 0
 gdt0_code:      
@@ -157,9 +175,12 @@ gdt0_descriptor:
         dw gdt0_end - gdt0_start - 1
         dd gdt0_start
 
-A20_ERR_MSG   db "A20 Not Enabled", 0
+global bios_mmap
+bios_mmap:
+	.low_sz dw 0
+	.high_sz dw 0
+	.num_items dd 0xdeadbeef
+	.tbl_start times 20*NUM_BIOS_MMAP_ENTRIES db 0 ;reserve space for 20 tables
 	
-;; Fill out to a full sector
-times 510-($-$$) db 0
-dw 0xaa55
+A20_ERR_MSG   db "A20 Not Enabled", 0
 
