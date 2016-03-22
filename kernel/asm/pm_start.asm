@@ -58,6 +58,10 @@ setup_page_tables:
     lea eax, [p3_table]
     or eax, 0b11
     mov [p4_table], eax
+
+    ;; Also map Canonical (negative) higher half to same 1G segment
+    mov [p4_table + 256*8], eax
+
     lea eax, [p2_table]
     or eax, 0b11
     mov [p3_table], eax
