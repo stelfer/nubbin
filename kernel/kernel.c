@@ -28,6 +28,7 @@ main()
         serial_puts(hexify(p->entries[i].start, buf, 19));
         serial_puts(hexify(p->entries[i].length, buf, 19));
         serial_puts(hexify(p->entries[i].type, buf, 19));
+        serial_puts(hexify(p->entries[i].ext_attr, buf, 19));
     }
 
     for (;;)

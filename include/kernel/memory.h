@@ -6,7 +6,7 @@ struct mem_info_entry {
     unsigned long start;
     unsigned long length;
     unsigned int type;
-    // unsigned int ext_attr;
+    unsigned int ext_attr;
 } __attribute__((packed));
 
 struct mem_info {

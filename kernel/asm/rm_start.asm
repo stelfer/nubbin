@@ -129,7 +129,7 @@ read_bios_mmap:
 .loop:	
 
 	mov eax, 0xe820
-	mov ecx, 20
+	mov ecx, 24
 	mov edx, 0x534D4150
 	int 0x15
 
@@ -139,7 +139,7 @@ read_bios_mmap:
 	inc esi
 	cmp esi, NUM_BIOS_MMAP_ENTRIES
 	je .num_bios_mmap_entries_exceeded
-	add di, 20
+	add di, 24
 
 	jmp .loop
 .num_bios_mmap_entries_exceeded:
