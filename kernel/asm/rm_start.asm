@@ -1,6 +1,6 @@
 bits 16
 extern pm_start
-
+extern _setup_paddr		; Defined by the linker, see linker script
 NUM_BIOS_MMAP_ENTRIES equ 20
 	
 section .boot	
@@ -10,7 +10,8 @@ rm_start:
 	;; our real-mode work
 
 	;; Load to NEXT
-	mov bx, 0x07e0
+	mov bx, _setup_paddr	; boot loaded pos + 512
+	shr bx, 4		; move it into es, so >> 4
 	mov es, bx
 	mov bx, 0
 	mov cl, 2

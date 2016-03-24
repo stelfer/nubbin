@@ -14,6 +14,7 @@ SECTIONS
 
 	.setup :
 	{
+		_setup_paddr = ADDR(.setup);
 		*(.setup)
 	}
 
