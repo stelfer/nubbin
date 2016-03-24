@@ -5,8 +5,10 @@ TARGET_CCWARN 		+= -Wno-unused-function -Wno-unused-variable -Wno-macro-redefine
 TARGET_CCFLAGS		+= -ffreestanding
 
 QEMU			:= /usr/local/bin/qemu-system-x86_64
-NOGRAPHIC		:= -nographic
-QEMU_IMAGE_ARGS		:= -m 1G  $(NOGRAPHIC) -boot order=a -fda
+QEMU_NOGRAPHIC		:= -nographic
+#QEMU_DEBUG		:= -s -S
+QEMU_SERIAL		:= -serial mon:stdio
+QEMU_IMAGE_ARGS		:= $(QEMU_DEBUG) $(QEMU_SERIAL) $(QEMU_NOGRAPHIC) -m 1G -fda 
 QEMU_KERNEL_ARGS	:= -kernel
 
 KERNEL_OBJS 		:= 					\
