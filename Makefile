@@ -5,18 +5,21 @@ TARGET_CCWARN 		+= -Wno-unused-function -Wno-unused-variable -Wno-macro-redefine
 TARGET_CCFLAGS		+= -ffreestanding
 
 QEMU			:= /usr/local/bin/qemu-system-x86_64
-QEMU_NOGRAPHIC		:= -nographic
+#QEMU_NOGRAPHIC		:= -nographic
 #QEMU_DEBUG		:= -s -S
 QEMU_SERIAL		:= -serial mon:stdio
-QEMU_IMAGE_ARGS		:= $(QEMU_DEBUG) $(QEMU_SERIAL) $(QEMU_NOGRAPHIC) -m 1G -fda 
+QEMU_IMAGE_ARGS		:= $(QEMU_DEBUG) $(QEMU_SERIAL) $(QEMU_NOGRAPHIC) -m 1G
+#-boot a -fda
 QEMU_KERNEL_ARGS	:= -kernel
 
 KERNEL_OBJS 		:= 					\
 			build/nubbin/kernel/kernel.o		\
 			build/nubbin/kernel/io.o 		\
-			build/nubbin/kernel/asm/rm_start.o	\
-			build/nubbin/kernel/asm/pm_start.o	\
-			build/nubbin/kernel/asm/lm_start.o	\
+			build/nubbin/kernel/asm/boot.o		\
+			build/nubbin/kernel/asm/setup16.o	\
+			build/nubbin/kernel/asm/setup32.o	\
+			build/nubbin/kernel/asm/ata.o		\
+			build/nubbin/kernel/asm/setup64.o	\
 			build/nubbin/kernel/console.o		\
 			build/nubbin/kernel/serial.o		\
 			build/nubbin/kernel/string.o

@@ -1,67 +1,48 @@
 bits 16
-extern pm_start
-extern _setup_paddr		; Defined by the linker, see linker script
+
+extern start32
+extern print_hex_rm
+extern print_string_rm
+	
+global start16
+
 NUM_BIOS_MMAP_ENTRIES equ 20
 	
-section .boot	
-rm_start:	
-	;; Do two loads here: (1), load the 7 remaining sectors in the .setup section to
-	;; NEXT; (2), load another 30 sectors into START. Everything in NEXT will handle
-	;; our real-mode work
-
-	;; Load to NEXT
-	mov bx, _setup_paddr	; boot loaded pos + 512
-	shr bx, 4		; move it into es, so >> 4
-	mov es, bx
-	mov bx, 0
-	mov cl, 2
-	mov dh, 7
-	mov dl, 0
-	call disk_load
-
-	;; Load to START
-        mov bx, 0xffff
-        mov es, bx
-        mov bx, 0x10
-	mov cl, 9
-        mov dh, 15
-	mov dl, 0
-        call disk_load
-
-	jmp rm_stage2
-
-%include "nubbin/kernel/asm/disk_load.asm"
-;;; Fill out to a full sector
-times 510-($-$$) db 0
-dw 0xaa55
-
 section .setup
-rm_stage2:	
-	
-        ;; Switch to protected mode
-        ;; Load the first of three GDT's
+
+;;; Handle all real mode activities here
+start16:	
+	;; We're 
 	mov sp, tmp_stack
 	mov bp, sp
 
 	cli
+
 	call check_a20
-	cmp ax, 1
-	jne a20_error
+	test ax, ax
+	jz .check_a20_err
 
 	call read_bios_mmap
-
+	jc .read_bios_mmap_err
+	
+	;; Switch to protected mode
 	lgdt [gdt0_descriptor]  ; Load the GDT
 
         mov eax, cr0
         or eax, 0x1
         mov cr0, eax            ; Set protected mode
-        jmp 0x08:pm_start        ; Long jump to 32 bits
+        jmp 0x08:start32        ; Long jump to 32 bits
 
-a20_error:
+.check_a20_err:
 	mov bx, A20_ERR_MSG
 	call print_string_rm
 	jmp $
+.read_bios_mmap_err:
+	mov bx, READ_BIOS_ERR_MSG
+	call print_string_rm
+	jmp $
 	
+;;; From osdev
 check_a20:
 	pushf
 	push ds
@@ -96,13 +77,12 @@ check_a20:
  
 	pop ax
 	mov byte [es:di], al
- 
+
 	mov ax, 0
-	je .check_a20__exit
+	je .done
  
 	mov ax, 1
- 
-.check_a20__exit:
+.done:
 	pop si
 	pop di
 	pop es
@@ -111,15 +91,19 @@ check_a20:
  
 	ret
 
+;;; Read the bios memory info while we are in real mode
+;;; Input:
+;;; Output CF -> error
 read_bios_mmap:
 	;; Low mem size
+	pusha
+	int 12h
 	mov [bios_mmap.low_sz], ax
 
 	;; High mem size
-	mov ah, 0x88
-	int 0x15
+	mov ah, 88h
+	int 15h
 	mov [bios_mmap.high_sz], ax
-
 
 	mov di, 0
 	mov es, di
@@ -127,38 +111,30 @@ read_bios_mmap:
 
 	xor ebx,ebx
 	mov esi, 0
-.loop:	
 
+.loop:	
 	mov eax, 0xe820
 	mov ecx, 24
 	mov edx, 0x534D4150
 	int 0x15
+	jc .error		; CF bit signals error
 
-	jc .error		; continuation bit signals error
 	test ebx, ebx
-	je .done
+	jz .done
+
 	inc esi
 	cmp esi, NUM_BIOS_MMAP_ENTRIES
-	je .num_bios_mmap_entries_exceeded
+	je .error
 	add di, 24
-
 	jmp .loop
-.num_bios_mmap_entries_exceeded:
-	mov dx, 0xdead
-	call print_hex_rm
-	jmp $
-.jcerror:
-	mov dx, 0xfeed
-	call print_hex_rm
-	jmp $
+
 .error:
-	mov dx, 0xdead
-	call print_hex_rm
-	jmp $
-	
-	;; Do something else here?
+	stc
+	popa
+	ret
 .done:
 	mov [bios_mmap.num_items], esi
+	popa
 	ret
 
 ;; Initial GDT
@@ -184,4 +160,5 @@ bios_mmap:
 	.tbl_start times 20*NUM_BIOS_MMAP_ENTRIES db 0 ;reserve space for 20 tables
 	
 A20_ERR_MSG   db "A20 Not Enabled", 0
+READ_BIOS_ERR_MSG   db "Unable to read BIOS Memory", 0
 

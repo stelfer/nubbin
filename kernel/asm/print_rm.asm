@@ -1,4 +1,8 @@
 bits 16
+
+global print_string_rm
+global print_hex_rm	
+
 ;;; Prints [bx] using BIOS 10h interrupt
 print_string_rm:   
         pusha

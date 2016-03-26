@@ -1,12 +1,16 @@
 bits 32
 
-extern lm_start
-global pm_start
+extern start64
+extern kernel_paddr
+extern kernel_pos
+extern kernel_size
+extern ata_do_st_read
+extern ata_do_st_softrst
+	
+global start32
 	
 section .setup
-pm_start:  
-	;; 32 Bits mode here, fix the registers as pointing
-        ;; To the data section of the current GDT
+start32:  
         mov ax, 0x10
         mov ds, ax
         mov ss, ax
@@ -14,15 +18,17 @@ pm_start:
         mov fs, ax
         mov gs, ax
 
-
-	mov esp, tmp_stack
-	mov ebp, esp
-	
 	call clear_screen_pm
+
 	call check_long_mode
+
 	call setup_page_tables
+
 	call enable_paging
 
+	call load_kernel
+	jc .load_kernel_err
+	
 	lgdt [gdt1_descriptor]
         mov ax, 0x10
         mov ds, ax
@@ -30,9 +36,13 @@ pm_start:
         mov fs, ax
         mov gs, ax
         mov ss, ax
-	jmp 0x08:lm_start
-	jmp $			;no-return
+	jmp 0x08:start64
 
+.load_kernel_err:
+	mov dx, LOAD_ERR_MSG
+	call print_string_pm
+	jmp $
+	
 ;;; Ensure that we have long mode
 check_long_mode:
 	pushad
@@ -103,10 +113,43 @@ enable_paging:
 
 	ret
 
+
+;;; Load the kernel with a 28-bit ATA PIO on the boot drive (i.e. bus0-master)	
+load_kernel:
+	mov dx, 03F6h		; First bus
+	call ata_do_st_softrst
+	jc .done
+
+	;; Figure out the kernel size in sectors
+	mov eax, kernel_size
+	mov edx, 0
+	mov ecx, 512
+	div ecx
+	
+	test edx, edx
+	jz .noextra
+	inc eax
+.noextra:
+	mov bl, al
+
+	;; Calculate the offset from the start of the drive
+	mov ecx, kernel_pos
+	shr ecx, 9
+
+	mov dx, 01f0h		; First bus
+	mov edi, kernel_paddr
+
+	call ata_do_st_read
+	jc .done
+
+.done:
+	ret
+	
 %include "nubbin/kernel/asm/print_pm.asm"
 
 NO_LONG_MODE_MSG db "Err:No Long Mode", 0
 IN_PROT_MODE_MSG db "In Protected Mode",0
+LOAD_ERR_MSG     db "Error loading kernel",0	
 gdt1_start:
         dd 0, 0
 gdt1_code:	
@@ -127,9 +170,6 @@ gdt1_end:
 gdt1_descriptor:
         dw gdt1_end - gdt1_start - 1
         dd gdt1_start                  
-tmp_stack_start:
-	times 64 db 0
-tmp_stack:	
 
 section .bss
 align 0x1000

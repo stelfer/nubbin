@@ -1,11 +1,11 @@
-global lm_start
 extern main
-
 extern bios_mmap
+
+global start64
 	
 section .setup
 bits 64
-lm_start:
+start64:
 
 	mov ax, 0x10
         mov ds, ax
@@ -14,11 +14,6 @@ lm_start:
         mov gs, ax
         mov ss, ax
 
-
-	;; mov edx, dword [bios_mmap + 4]
-	;; call print_hex_lm
-	;; jmp $
-	
 	;; TODO: map main to higher half
 	;; link main to higher half
 	;; jump to higher half
@@ -28,4 +23,5 @@ lm_start:
 	call main
 	jmp $
 
+	
 %include "nubbin/kernel/asm/print_lm.asm"
