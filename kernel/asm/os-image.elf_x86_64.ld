@@ -4,10 +4,15 @@ kernel_paddr       = 0x100000;
 kernel_vaddr_off   = 0xffffffff00000000;
 kernel_vaddr 	   = kernel_vaddr_off + kernel_paddr;
 kernel_pos   	   = 0x001000;		/* physical position in output */
-page_table_paddr   = 0x00200000;
 kernel_stack_paddr = 0x005fffff;
 kernel_size 	   = SIZEOF(.kernel);
 user_vaddr 	   = 0x100000;
+
+paddr_base	   = 0x00200000;
+gdt_paddr	   = paddr_base;
+idt_paddr	   = gdt_paddr + 0x1000;
+page_table_paddr   = idt_paddr + 0x2000;
+
 
 SECTIONS
 {
