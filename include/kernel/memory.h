@@ -16,4 +16,9 @@ struct mem_info {
     struct mem_info_entry entries[];
 } __attribute__((packed));
 
+extern unsigned long kernel_vaddr_off;
+extern unsigned long bios_mmap;
+#define KERNEL_SYM_ADDR(x) \
+    ((unsigned long)(&x) + (unsigned long)&kernel_vaddr_off)
+
 #endif /* _MEMORY_H */

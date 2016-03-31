@@ -6,12 +6,12 @@
 #include <nubbin/kernel/memory.h>
 #include <nubbin/kernel/serial.h>
 
-extern unsigned long bios_mmap;
 
 void
 main()
 {
-    const struct mem_info* p = (const struct mem_info*)&bios_mmap;
+    const struct mem_info* p =
+        (const struct mem_info*)(KERNEL_SYM_ADDR(bios_mmap));
 
     serial_puts("hi");
 
