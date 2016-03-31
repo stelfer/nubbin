@@ -105,10 +105,12 @@ serial_puts:
 	pop rbx
 	ret
 
-;;; In: EBX -> the addr, EDX -> the address length
+;;; In: RDI -> the addr, RSI -> the address length
 serial_putaddr:	
 	push rdi
-	mov edi, HEX_OUT
+	mov rbx, rdi
+	mov rdi, HEX_OUT
+	mov rdx, rsi
 	call string_hexify
 	mov ebx, eax
 	call serial_puts
