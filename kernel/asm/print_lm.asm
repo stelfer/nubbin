@@ -4,16 +4,15 @@ WHITE_ON_BLACK equ 0x2f
 print_hex_lm:
         mov edi, 17
 .loop:
-        cmp edi, 1
-        je .done
         mov rbx, rdx 
-        call to_ascii           ; convert bx -> ascii
-        mov [PRINT_HEX_OUT + edi], al  ; set PRINT_HEX_OUT memory
-        shr edx, 4               ; right shift dx 4 bits
-        dec edi
-        jmp .loop
-        
-.done:  
+        call to_ascii		      ; convert bx -> ascii
+	mov [PRINT_HEX_OUT + edi], al ; set PRINT_HEX_OUT memory
+        shr rdx, 4		      ; right shift dx 4 bits
+	
+	dec edi
+        cmp edi, 1
+	jg .loop
+
         mov rbx, PRINT_HEX_OUT
         call print_string_lm
         ret
