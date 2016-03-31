@@ -13,7 +13,6 @@ main()
 {
     const struct mem_info* p = (const struct mem_info*)&bios_mmap;
 
-    serial_init();
     serial_puts("hi");
 
     /* console_clear(); */

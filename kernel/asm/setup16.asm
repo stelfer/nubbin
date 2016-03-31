@@ -3,7 +3,10 @@ bits 16
 extern start32
 extern print_hex_rm
 extern print_string_rm
-	
+extern gdt32.descriptor
+extern gdt32.code
+extern gdt32.data	
+
 global start16
 
 NUM_BIOS_MMAP_ENTRIES equ 20
@@ -12,10 +15,6 @@ section .setup
 
 ;;; Handle all real mode activities here
 start16:	
-	;; We're 
-	mov sp, tmp_stack
-	mov bp, sp
-
 	cli
 
 	call check_a20
@@ -26,12 +25,19 @@ start16:
 	jc .read_bios_mmap_err
 	
 	;; Switch to protected mode
-	lgdt [gdt0_descriptor]  ; Load the GDT
+	lgdt [gdt32.descriptor]  ; Load the GDT
 
         mov eax, cr0
         or eax, 0x1
         mov cr0, eax            ; Set protected mode
-        jmp 0x08:start32        ; Long jump to 32 bits
+
+        mov ax, gdt32.data
+        mov ds, ax
+        mov ss, ax
+        mov es, ax
+        mov fs, ax
+        mov gs, ax
+	jmp gdt32.code:start32        ; Long jump to 32 bits
 
 .check_a20_err:
 	mov bx, A20_ERR_MSG
@@ -137,21 +143,9 @@ read_bios_mmap:
 	popa
 	ret
 
-;; Initial GDT
-tmp_stack_bottom:
-	times 64 db 0
-tmp_stack:	
-gdt0_start:
-        dd 0, 0
-gdt0_code:      
-        db 0xFF, 0xFF, 0, 0, 0, 10011010b, 11001111b, 0x00
-gdt0_data:      
-        db 0xFF, 0xFF, 0, 0, 0, 10010010b, 11001111b, 0x00 
-gdt0_end:  
-gdt0_descriptor:        
-        dw gdt0_end - gdt0_start - 1
-        dd gdt0_start
-
+A20_ERR_MSG   db "A20 Not Enabled", 0
+READ_BIOS_ERR_MSG   db "Unable to read BIOS Memory", 0
+	
 global bios_mmap
 bios_mmap:
 	.low_sz dw 0
@@ -159,6 +153,4 @@ bios_mmap:
 	.num_items dd 0xdeadbeef
 	.tbl_start times 20*NUM_BIOS_MMAP_ENTRIES db 0 ;reserve space for 20 tables
 	
-A20_ERR_MSG   db "A20 Not Enabled", 0
-READ_BIOS_ERR_MSG   db "Unable to read BIOS Memory", 0
 

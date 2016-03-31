@@ -1,41 +1,42 @@
 /* Copyright (C) 2016 by Soren Telfer - MIT License. See LICENSE.txt */
 boot_paddr   = 0x007c00;		/* boot offset */
 kernel_paddr = 0x100000;
-kernel_vaddr = 0x100000;		/* virtual memory address of main() */
+kernel_vaddr = 0xffffffff00100000;
+
 kernel_pos   = 0x001000;		/* physical position in output */
-kernel_off   = - kernel_vaddr + kernel_pos + boot_paddr;
+/* kernel_off   = - kernel_vaddr + kernel_pos + boot_paddr; */
+
+page_table_paddr   = 0x00200000;
+kernel_stack_paddr = 0x005fffff;
+kernel_size = SIZEOF(.kernel);
+
+user_vaddr = 0x100000;
+
 SECTIONS
 {
-	. = boot_paddr;
-
-	.boot :
+	.boot-setup boot_paddr :
 	{
 		*(.boot)
-	}
-
-	.setup :
-	{
-		_setup_paddr = ADDR(.setup);
+		_setup_paddr = .;
 		*(.setup)
 	}
 
-	. = kernel_vaddr;
-	.text : AT(ADDR(.text) + kernel_off)
+	.kernel kernel_vaddr : AT(boot_paddr + kernel_pos)
 	{
-		*(.text)
+		*.ko(.text)
+		*.ko(.data*)
+		*.ko(.rodata*)
+		*.ko(COMMON*)
+		*.ko(.bss*)
 	}
- 
-	.data : AT(ADDR(.data) + kernel_off)
-	{
-		*(.data)
-		*(.rodata*)
-	}
-	kernel_size = . - kernel_vaddr;
 
-	.bss : AT(ADDR(.bss) + kernel_off)
+	.user user_vaddr : AT(LOADADDR(.kernel) + SIZEOF(.kernel))
 	{
-		*(COMMON*)
-		*(.bss*)
+		*.o(.text)
+		*.o(.data*)
+		*.o(.rodata*)
+		*.o(COMMON*)
+		*.o(.bss*)
 	}
 
 	/DISCARD/ :
