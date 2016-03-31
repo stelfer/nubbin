@@ -8,4 +8,6 @@ void serial_putc(char a);
 
 void serial_puts(const char* buf);
 
+void serial_putaddr(unsigned long addr, unsigned long len);
+
 #endif /* _SERIAL_H */
