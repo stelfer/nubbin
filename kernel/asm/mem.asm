@@ -48,9 +48,6 @@ GDT_DESCR	equ 24
 ;;; then also for the kernel space, the high range
 ;;; V:0xffffffff00000000 -> P:0x0000000000000000
 ;;; The offsets below are to achive the 27 bit (PML4,PDP,PD) lookups
-
-;; GDT64		equ page_table_paddr
-;; IDT64		equ GDT64 + 0x1000	
 PML4 		equ page_table_paddr
 PML4_HOFF 	equ PML4 + 511 * 8
 PDPL 		equ PML4 + 0x1000
