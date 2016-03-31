@@ -8,8 +8,6 @@ extern kernel_stack_paddr
 extern kernel_vaddr
 extern serial_init
 extern serial_puts
-extern serial_putc
-extern serial_putaddr
 	
 section .setup
 start64:
