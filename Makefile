@@ -22,6 +22,7 @@ KERNEL_OBJS 		:= 					\
 			build/nubbin/kernel/asm/serial.o	\
 			build/nubbin/kernel/asm/string.o	\
 			build/nubbin/kernel/asm/mem.o		\
+			build/nubbin/kernel/asm/interrupts.o	\
 			build/nubbin/kernel/asm/setup64.o	\
 			build/nubbin/kernel/console.ko		\
 			build/nubbin/kernel/string.ko		\
