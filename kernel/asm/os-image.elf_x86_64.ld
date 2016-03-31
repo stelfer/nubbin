@@ -30,7 +30,7 @@ SECTIONS
 		*.ko(.bss*)
 	}
 
-	.user user_vaddr : AT(LOADADDR(.kernel) + SIZEOF(.kernel))
+	.user user_vaddr + SIZEOF(.kernel): AT(LOADADDR(.kernel) + SIZEOF(.kernel))
 	{
 		*.o(.text)
 		*.o(.data*)
