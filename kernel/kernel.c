@@ -6,6 +6,7 @@
 #include <nubbin/kernel/memory.h>
 #include <nubbin/kernel/serial.h>
 
+int hello_user();
 
 void
 main()
@@ -16,6 +17,7 @@ main()
     serial_puts("hi");
 
     /* console_clear(); */
+    hello_user();
 
     char buf[19];
 
