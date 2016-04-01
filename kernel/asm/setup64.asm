@@ -4,9 +4,7 @@ global start64
 
 extern main
 extern kernel_stack_paddr
-extern kernel_vaddr
 extern serial_init
-extern serial_puts
 extern idt_init
 	
 bits 64
