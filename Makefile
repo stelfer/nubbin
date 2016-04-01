@@ -47,6 +47,9 @@ $(BUILD)/%.ko : %.c | $(DEPDIR)/%.d
 	$(POSTCOMPILE_CMD)
 	$(POSTCOMPILE_DEP)
 
+$(BUILD)/%.ko : %.asm | $(DEPDIR)/%.d
+	$(call NASM_BUILD,$(TARGET_FORMAT))
+
 $(OS_IMAGE): $(KERNEL_OBJS)
 	$(TARGET_LD) -m $(TARGET_LDEMU) -Tnubbin/kernel/asm/os-image.$(TARGET_LDEMU).ld $^ $(KERNEL_LD_OPTS) -o $@.elf64
 	$(TARGET_OBJCOPY) -S -O binary $@.elf64 $@
