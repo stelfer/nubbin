@@ -1,4 +1,5 @@
-
+;;;Copyright (C) 2016 by Soren Telfer - MIT License. See LICENSE.txt
+	
 global start64
 
 extern main
