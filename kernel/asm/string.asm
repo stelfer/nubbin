@@ -4,11 +4,16 @@ global strlen
 	
 bits 64
 section .setup
-;;; In: RBX -> number to be converted, RDI -> buffer with formatted string, RDX -> length of RBX
-string_hexify:	
+
+
+;;; In: RDI -> the buffer, RSI -> the number, RDX -> length of RSI, RCX -> offset
+string_hexify:
 	push rbx
+	mov rbx, rsi
 	add rdx, rdx		; Move to the end +1 (assuming first two are '0x')
-	add rdx, 1
+	dec rcx
+	add rdx, rcx		; Add the offset, and 0-base it as an index
+
 .loop:
 	mov al, bl
         and al, 0fh
@@ -23,9 +28,8 @@ string_hexify:
 	mov [rdi + rdx], al
 	shr rbx, 4
 	dec edx
-	cmp edx, 1
+	cmp edx, ecx
 	jg .loop
-
 .done:
 	pop rbx
 	ret
