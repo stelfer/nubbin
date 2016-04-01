@@ -6,6 +6,7 @@ extern main
 extern kernel_stack_paddr
 extern serial_init
 extern idt_init
+extern cpu_init
 	
 bits 64
 section .setup
@@ -16,6 +17,7 @@ start64:
 
 	call idt_init
 	call serial_init
+	call cpu_init
 
 	mov rax, main
 	call rax

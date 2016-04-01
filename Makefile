@@ -25,6 +25,7 @@ KERNEL_OBJS 		:= 					\
 			build/nubbin/kernel/asm/interrupts.o	\
 			build/nubbin/kernel/asm/setup64.o	\
 			build/nubbin/kernel/asm/task.ko		\
+			build/nubbin/kernel/asm/cpu.o		\
 			build/nubbin/kernel/console.ko		\
 			build/nubbin/kernel/string.ko		\
 			build/nubbin/kernel/user.o
