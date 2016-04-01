@@ -7,7 +7,7 @@
 #include <nubbin/kernel/serial.h>
 
 int hello_user();
-
+int task_init();
 void
 main()
 {
@@ -15,8 +15,7 @@ main()
         (const struct mem_info*)(KERNEL_SYM_ADDR(bios_mmap));
 
     serial_puts("hi");
-    hello_user();
-
+    task_init();
     char buf[19];
 
     serial_puts(hexify(p->low_mem, buf, 19));
@@ -29,6 +28,8 @@ main()
         serial_puts(hexify(p->entries[i].type, buf, 19));
         serial_puts(hexify(p->entries[i].ext_attr, buf, 19));
     }
+
+    hello_user();
 
     for (;;)
         ;
