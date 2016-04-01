@@ -11,7 +11,7 @@ extern strlen
 	
 PORT equ 3f8h	
 bits 64
-section .setup
+section .text
 serial_init:
 	push rdx
 	mov dx, PORT

@@ -18,8 +18,10 @@ section .setup
 default_handler:
 	push rdi
 	mov rdi, INTR_MSG
-	call serial_puts
+	mov rax, serial_puts
+	call rax
 	pop rdi
+	jmp $
 	iretq
 
 ;;; In: RDI -> descriptor address, RSI-> obj, DX-> TYPE

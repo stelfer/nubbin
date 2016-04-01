@@ -3,7 +3,7 @@ global string_hexify
 global strlen
 	
 bits 64
-section .setup
+section .text
 
 
 ;;; In: RDI -> the buffer, RSI -> the number, RDX -> length of RSI, RCX -> offset
