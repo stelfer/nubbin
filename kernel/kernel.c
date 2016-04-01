@@ -14,6 +14,7 @@ main()
     const struct mem_info* p =
         (const struct mem_info*)(KERNEL_SYM_ADDR(bios_mmap));
 
+    serial_init();
     serial_puts("hi");
     task_init();
     char buf[19];

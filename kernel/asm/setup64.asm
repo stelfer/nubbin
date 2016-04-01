@@ -16,7 +16,6 @@ start64:
 	mov rbp, rsp
 
 	call idt_init
-	call serial_init
 	call cpu_init
 
 	mov rax, main
