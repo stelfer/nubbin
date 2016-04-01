@@ -2,6 +2,7 @@ global serial_init
 global serial_putc
 global serial_puts
 global serial_putaddr
+global serial_putaddrf
 
 extern string_hexify
 extern strlen	
@@ -106,21 +107,42 @@ serial_puts:
 	ret
 
 ;;; In: RDI -> the addr, RSI -> the address length
-serial_putaddr:	
-	push rdi
-	mov rbx, rdi
-	mov rdi, HEX_OUT
+serial_putaddr:
 	mov rdx, rsi
+	mov rsi, rdi
+	cmp rdx, 8
+	je .use64
+	cmp rdx, qword 4
+	je .use32
+	cmp rdx, 2
+	je .use16
+	mov rdi, HEX8_OUT
+	jmp .continue
+.use64: mov rdi, HEX64_OUT
+	jmp .continue
+.use32: mov rdi, HEX32_OUT
+	jmp .continue
+.use16: mov rdi, HEX16_OUT
+.continue:
+	mov rcx, 2
 	call string_hexify
-	mov ebx, eax
 	call serial_puts
-	pop rdi
 	ret
 
+
+;;; In: RDI -> the buffer, RSI -> the number, RDX -> the length of rsi, RCX -> offset
+serial_putaddrf:
+	call string_hexify
+	call serial_puts
+	ret
+	
 	
 align 4
 section .setup
 serial_lock dd 0
-	
-HEX_OUT db '0x0000000000000000', 0
+
+HEX8_OUT  db '0x00', 0
+HEX16_OUT db '0x0000', 0
+HEX32_OUT db '0x00000000', 0
+HEX64_OUT db '0x0000000000000000', 0
 	
