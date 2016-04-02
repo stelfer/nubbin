@@ -28,7 +28,9 @@ KERNEL_OBJS 		:= 					\
 			build/nubbin/kernel/asm/cpu.o		\
 			build/nubbin/kernel/console.ko		\
 			build/nubbin/kernel/string.ko		\
+			build/nubbin/kernel/cpu.ko		\
 			build/nubbin/kernel/memory.ko		\
+			build/nubbin/kernel/acpi.ko		\
 			build/nubbin/kernel/user.o
 
 OS_IMAGE		:= build/nubbin/os-image

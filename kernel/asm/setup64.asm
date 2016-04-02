@@ -11,12 +11,10 @@ extern cpu_init
 bits 64
 section .setup
 start64:
-	
 	mov rsp, kernel_stack_paddr
 	mov rbp, rsp
 
 	call idt_init
-	call cpu_init
 
 	mov rax, main
 	call rax
