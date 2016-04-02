@@ -2,8 +2,12 @@
 #ifndef _STRING_H
 #define _STRING_H
 
+#include <nubbin/kernel/stddef.h>
+
 const char* hexify(unsigned long x, char* fmt, unsigned long len);
 
 void* memcpy(void* dst, void const* src, unsigned long len);
+
+int memcmp(const void* s1, const void* s2, size_t len);
 
 #endif /* _STRING_H */

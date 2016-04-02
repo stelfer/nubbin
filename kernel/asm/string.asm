@@ -1,6 +1,7 @@
 
 global string_hexify
 global strlen
+global memcmp
 	
 bits 64
 section .text
@@ -51,3 +52,22 @@ strlen:
 	pop rdi
 	pop rcx
 	ret
+
+;; In: rdi -> s1, rsi-> s2, rdx -> size
+memcmp:
+	push rdi
+	push rsi
+	xor rax,rax
+	mov ecx, edx
+	cld
+	cmp ecx, ecx
+	repe cmpsb
+	jz .match
+	mov al, byte [rdi]
+	sub al, byte [rsi]
+.match:	
+	pop rsi
+	pop rdi
+	ret
+	
+	
