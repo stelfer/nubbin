@@ -47,7 +47,7 @@ serial_init:
 	pop rdx
 	ret
 
-;;; In: BL -> char to send
+;;; In: DI -> char to send
 serial_putc:
 	push rdx
 	mov edx, PORT
@@ -58,7 +58,8 @@ serial_putc:
 	jz .not_rdy
 
 	sub dl, 5
-	mov al, bl
+	mov ax, di
+	mov ah, 0
 
  	spinlock_acq serial_lock, .not_rdy
 	out dx, al
@@ -102,6 +103,7 @@ serial_puts:
 	mov ebx, eax
 	call serial_send_string
 	mov bl, 0x0a
+	mov di, 0x0a
 	call serial_putc
 	pop rbx
 	ret
