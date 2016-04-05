@@ -43,7 +43,8 @@ nubbin-clean:
 	rm -f $(patsubst build/%.o,build/deps/%.d,$(KERNEL_OBJS))
 	rm -f $(patsubst build/%.bin,build/deps/%.d,$(PM_START_BIN) $(RM_START)) 
 
-TARGET_CCFLAGS		+= -mcmodel=large
+KERNEL_VERSION		!= cd $(PROJECT) && git rev-parse --short HEAD
+TARGET_CCFLAGS		+= -mcmodel=large -DVERSION=\"$(KERNEL_VERSION)\"
 
 TESTS		:= 
 

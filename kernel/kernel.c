@@ -15,7 +15,7 @@ main()
 {
     serial_init();
     console_bold();
-    console_puts("Starting kernel...");
+    console_puts("Starting nubbin " VERSION);
     console_reset();
     kdata_init();
 
