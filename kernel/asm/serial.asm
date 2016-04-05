@@ -3,7 +3,8 @@ global serial_putc
 global serial_puts
 global serial_put
 global serial_putf
-
+global serial_write
+	
 extern string_hexify
 extern strlen	
 
@@ -49,7 +50,6 @@ serial_init:
 
 ;;; In: DI -> char to send
 serial_putc:
-	push rdx
 	mov edx, PORT
 	add dx, 5
 .not_rdy:
@@ -64,14 +64,10 @@ serial_putc:
  	spinlock_acq serial_lock, .not_rdy
 	out dx, al
 	spinlock_rel serial_lock
-	
-	pop rdx
 	ret
 
 ;;; In: edi -> buffer to print, ebx -> string length
-serial_send_string:
-	push rdx
-	push rcx
+serial_write:
 	mov edx, PORT
 	add dx, 5
 .not_rdy:
@@ -88,24 +84,19 @@ serial_send_string:
 	mov al, [edi + ecx]		
 	out dx, al
 	add ecx, 1
-	cmp ecx, ebx
+	cmp ecx, esi
 	jne .loop
 	
 	spinlock_rel serial_lock
-	pop rcx
-	pop rdx
 	ret
 
 ;;; In: edi -> buffer to print
 serial_puts:
 	call strlen
-	push rbx
-	mov ebx, eax
-	call serial_send_string
-	mov bl, 0x0a
+	mov esi, eax
+	call serial_write
 	mov di, 0x0a
 	call serial_putc
-	pop rbx
 	ret
 
 ;;; In: RDI -> the number, RSI -> the address length
