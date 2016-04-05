@@ -1,10 +1,13 @@
 
 
-#include <nubbin/kernel/serial.h>
+#include <nubbin/kernel/console.h>
+
+CONSOLE_TAG("USER");
 
 int
 hello_user()
 {
-    serial_puts("hello from user");
+    console_start("Starting");
+    console_ok();
     return 0;
 }
