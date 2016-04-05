@@ -16,6 +16,8 @@ void serial_putf(const char* fmt,
 
 void serial_init();
 
+void serial_write(const char*, unsigned long len);
+
 #define serial_putb(x) serial_put((x), 1)
 #define serial_putw(x) serial_put((x), 2)
 #define serial_putd(x) serial_put((x), 4)
