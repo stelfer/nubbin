@@ -45,3 +45,9 @@ static inline uint32_t log2(const uint32_t x) {
 #define SPLIT_BITMAP_LOW(x,y,w) ((__SPLIT_BITMAP_R(y,w) != (w)) * ((x) << __SPLIT_BITMAP_R(y,w)))
 
 #endif  /* _MACRO_H */
+static inline u64
+align_to(u64 x, u64 mask)
+{
+    return (x + (mask - 1)) & (~(mask - 1));
+}
+
