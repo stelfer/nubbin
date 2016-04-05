@@ -14,8 +14,9 @@ void
 main()
 {
     serial_init();
-    serial_puts("Starting kernel...");
-
+    console_bold();
+    console_puts("Starting kernel...");
+    console_reset();
     kdata_init();
 
     memory_map_init_finish();
