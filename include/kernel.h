@@ -5,4 +5,6 @@
 
 #define PANIC() __asm__("int $3\n")
 
+#define HALT() __asm__("hlt\n");
+
 #endif /* _KERNEL_H */
