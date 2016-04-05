@@ -117,7 +117,7 @@ read_bios_mmap:
 
 	xor ebx,ebx
 	mov esi, 0
-
+	xor eax, eax
 .loop:	
 	mov eax, 0xe820
 	mov ecx, 24
@@ -151,6 +151,6 @@ bios_mmap:
 	.low_sz dw 0
 	.high_sz dw 0
 	.num_items dd 0xdeadbeef
-	.tbl_start times 20*NUM_BIOS_MMAP_ENTRIES db 0 ;reserve space for 20 tables
+	.tbl_start times 24*NUM_BIOS_MMAP_ENTRIES db 0 ;reserve space for 20 tables
 	
 
