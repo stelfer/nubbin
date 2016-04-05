@@ -2,6 +2,7 @@
 global string_hexify
 global strlen
 global memcmp
+global bzero
 	
 bits 64
 section .text
@@ -69,5 +70,11 @@ memcmp:
 	pop rsi
 	pop rdi
 	ret
-	
+
+;;; rdi -> dst, esi -> len
+bzero:
+	xor rax, rax
+	mov ecx, esi
+	rep stosb
+	ret
 	
