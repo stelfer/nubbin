@@ -25,12 +25,14 @@ KERNEL_OBJS 		:= 					\
 			build/nubbin/kernel/asm/interrupts.o	\
 			build/nubbin/kernel/asm/setup64.o	\
 			build/nubbin/kernel/asm/task.ko		\
-			build/nubbin/kernel/asm/cpu.o		\
+			build/nubbin/kernel/asm/cpu.ko		\
+			build/nubbin/kernel/asm/apic.ko		\
 			build/nubbin/kernel/console.ko		\
 			build/nubbin/kernel/string.ko		\
 			build/nubbin/kernel/cpu.ko		\
 			build/nubbin/kernel/memory.ko		\
 			build/nubbin/kernel/acpi.ko		\
+			build/nubbin/kernel/kdata.ko		\
 			build/nubbin/kernel/user.o
 
 OS_IMAGE		:= build/nubbin/os-image

@@ -8,15 +8,15 @@ extern kernel_pos
 extern kernel_size
 extern ata_do_st_read
 extern ata_do_st_softrst
-extern mem_init_tables	
-extern mem_enable_ia32e
+extern memory_map_init_early
+extern memory_enable_ia32e
 	
 section .setup
 start32:  
 	call check_long_mode
-	call mem_init_tables
+	call memory_map_init_early
 	call load_kernel
-	call mem_enable_ia32e
+	call memory_enable_ia32e
 	jmp 0x08:start64
 
 ;;; Ensure that we have long mode

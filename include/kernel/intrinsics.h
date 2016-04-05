@@ -3,6 +3,8 @@
 #ifndef _INTRINSICS_H
 #define _INTRINSICS_H
 
+#include <nubbin/kernel/macro.h>
+
 #define __must_check __attribute__((warn_unused_result))
 #define __packed __attribute__((packed))
 #define __printf(a, b) __attribute__((format(printf, (a), (b))))
@@ -24,5 +26,7 @@
 #define htonl bswap_32
 #define ntohl bswap_32
 #endif
+
+#define STATIC_ASSERT(x) _Static_assert((x), STRINGIFY(x))
 
 #endif /* _INTRINSICS_H */

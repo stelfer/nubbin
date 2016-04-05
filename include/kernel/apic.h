@@ -1,0 +1,115 @@
+/* Copyright (C) 2016 by Soren Telfer - MIT License. See LICENSE.txt */
+#ifndef _APIC_H
+#define _APIC_H
+
+#include <nubbin/kernel/types.h>
+
+u64 apic_get_base_msr();
+
+// #define APIC_CPU_IS_BSP(AB)
+
+#define LOCAL_REG_MAP(name) \
+    struct {                \
+        u32 dw0;            \
+        u32 dw1;            \
+        u32 dw2;            \
+        u32 dw3;            \
+    } name
+struct apic_local_reg_map {
+    LOCAL_REG_MAP(off_0000);
+    LOCAL_REG_MAP(off_0010);
+    LOCAL_REG_MAP(off_0020);
+    LOCAL_REG_MAP(off_0030);
+    LOCAL_REG_MAP(off_0040);
+    LOCAL_REG_MAP(off_0050);
+    LOCAL_REG_MAP(off_0060);
+    LOCAL_REG_MAP(off_0070);
+    LOCAL_REG_MAP(off_0080);
+    LOCAL_REG_MAP(off_0090);
+    LOCAL_REG_MAP(off_00a0);
+    LOCAL_REG_MAP(off_00b0);
+    LOCAL_REG_MAP(off_00c0);
+    LOCAL_REG_MAP(off_00d0);
+    LOCAL_REG_MAP(off_00e0);
+    LOCAL_REG_MAP(off_00f0);
+    LOCAL_REG_MAP(off_0100);
+    LOCAL_REG_MAP(off_0110);
+    LOCAL_REG_MAP(off_0120);
+    LOCAL_REG_MAP(off_0130);
+    LOCAL_REG_MAP(off_0140);
+    LOCAL_REG_MAP(off_0150);
+    LOCAL_REG_MAP(off_0160);
+    LOCAL_REG_MAP(off_0170);
+    LOCAL_REG_MAP(off_0180);
+    LOCAL_REG_MAP(off_0190);
+    LOCAL_REG_MAP(off_01a0);
+    LOCAL_REG_MAP(off_01b0);
+    LOCAL_REG_MAP(off_01c0);
+    LOCAL_REG_MAP(off_01d0);
+    LOCAL_REG_MAP(off_01e0);
+    LOCAL_REG_MAP(off_01f0);
+    LOCAL_REG_MAP(off_0200);
+    LOCAL_REG_MAP(off_0210);
+    LOCAL_REG_MAP(off_0220);
+    LOCAL_REG_MAP(off_0230);
+    LOCAL_REG_MAP(off_0240);
+    LOCAL_REG_MAP(off_0250);
+    LOCAL_REG_MAP(off_0260);
+    LOCAL_REG_MAP(off_0270);
+    LOCAL_REG_MAP(off_0280);
+    LOCAL_REG_MAP(off_0290);
+    LOCAL_REG_MAP(off_02a0);
+    LOCAL_REG_MAP(off_02b0);
+    LOCAL_REG_MAP(off_02c0);
+    LOCAL_REG_MAP(off_02d0);
+    LOCAL_REG_MAP(off_02e0);
+    LOCAL_REG_MAP(off_02f0);
+    LOCAL_REG_MAP(off_0300);
+    LOCAL_REG_MAP(off_0310);
+    LOCAL_REG_MAP(off_0320);
+    LOCAL_REG_MAP(off_0330);
+    LOCAL_REG_MAP(off_0340);
+    LOCAL_REG_MAP(off_0350);
+    LOCAL_REG_MAP(off_0360);
+    LOCAL_REG_MAP(off_0370);
+    LOCAL_REG_MAP(off_0380);
+    LOCAL_REG_MAP(off_0390);
+    LOCAL_REG_MAP(off_03a0);
+    LOCAL_REG_MAP(off_03b0);
+    LOCAL_REG_MAP(off_03c0);
+    LOCAL_REG_MAP(off_03d0);
+    LOCAL_REG_MAP(off_03e0);
+    LOCAL_REG_MAP(off_03f0);
+};
+#undef LOCAL_REG_MAP
+typedef struct apic_local_reg_map apic_local_reg_map_t;
+
+static inline u8
+apic_cpu_is_bsp(u64 apic_base)
+{
+    return (apic_base & (1 << 8)) != 0;
+}
+
+static inline u8
+apic_local_apic_enabled(u64 apic_base)
+{
+    return (apic_base & (1 << 11)) != 0;
+}
+
+static inline size_t
+apic_base_addr(u64 apic_base)
+{
+    return apic_base & 0xffffff000;
+}
+
+u32 apic_reg_read32(u64 apic_base);
+
+static inline u8
+apic_reg_apic_id(u64 apic_base)
+{
+    return apic_reg_read32(apic_base_addr(apic_base) + 0x20);
+}
+
+void apic_set_base_msr(void* addr);
+
+#endif /* _APIC_H */

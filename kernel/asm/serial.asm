@@ -66,7 +66,7 @@ serial_putc:
 	spinlock_rel serial_lock
 	ret
 
-;;; In: edi -> buffer to print, ebx -> string length
+;;; In: edi -> buffer to print, esi -> string length
 serial_write:
 	mov edx, PORT
 	add dx, 5
@@ -85,7 +85,7 @@ serial_write:
 	out dx, al
 	add ecx, 1
 	cmp ecx, esi
-	jne .loop
+	jl .loop
 	
 	spinlock_rel serial_lock
 	ret

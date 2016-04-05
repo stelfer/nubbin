@@ -6,6 +6,7 @@
 #include <nubbin/kernel/memory.h>
 #include <nubbin/kernel/serial.h>
 #include <nubbin/kernel/cpu.h>
+#include <nubbin/kernel/kdata.h>
 
 int hello_user();
 int task_init();
@@ -13,7 +14,11 @@ void
 main()
 {
     serial_init();
-    serial_puts("hi");
+    serial_puts("Starting kernel...");
+
+    kdata_init();
+
+    memory_map_init_finish();
 
     cpu_init();
 

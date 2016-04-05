@@ -10,4 +10,8 @@ void* memcpy(void* dst, void const* src, unsigned long len);
 
 int memcmp(const void* s1, const void* s2, size_t len);
 
+void bzero(void* dst, size_t len);
+
+size_t strlen(const char* p);
+
 #endif /* _STRING_H */

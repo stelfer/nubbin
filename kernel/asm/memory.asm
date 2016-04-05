@@ -1,7 +1,8 @@
 ;Copyright (C) 2016 by Soren Telfer - MIT License. See LICENSE.txt
 
-global mem_init_tables
-global mem_enable_ia32e	
+global memory_map_init_early
+global memory_enable_ia32e
+global memory_flush_tlb	
 global gdt32
 global gdt32.code
 global gdt32.data
@@ -43,43 +44,40 @@ GDT_CODE	equ 8
 GDT_DATA	equ 16	
 GDT_DESCR	equ 24
 	
-;;; Initial Page table setup, we identity map the first GB:
-;;; V:0x0000000000000000 -> P:0x0000000000000000
-;;; then also for the kernel space, the high range
-;;; V:0xffffffff00000000 -> P:0x0000000000000000
-;;; The offsets below are to achive the 27 bit (PML4,PDP,PD) lookups
+;;; See struct memory_page_tables in memory.h
 PML4 		equ page_table_paddr
 PML4_HOFF 	equ PML4 + 511 * 8
-PDPL 		equ PML4 + 0x1000
-PDPH 		equ PDPL + 0x1000
-PDPH_HOFF 	equ PDPH + 508 * 8
-PD   		equ PDPH + 0x1000	
+USER_PDP 	equ PML4 + 0x1000
+KERN_PDP 	equ USER_PDP + 0x1000
+KERN_PDP_HOFF 	equ KERN_PDP + 508 * 8
+MMAP_PDP	equ KERN_PDP + 0x1000	
+USER_PDS   	equ MMAP_PDP + 0x1000 
 
 bits 32
 section .setup
-mem_init_tables:	
+memory_map_init_early:	
 	;; Zero the tables
 	mov ax, 0
 	mov ecx, 0x400
 	lea edi, [PML4]
 	rep stosd
-	lea edi, [PDPL]
+	lea edi, [USER_PDP]
 	rep stosd
-	lea edi, [PDPH]
+	lea edi, [KERN_PDP]
 	rep stosd
-	lea edi, [PD]
+	lea edi, [USER_PDS]
 	rep stosd
 
-	lea eax, [PD]
+	lea eax, [USER_PDS]
 	or eax, 0b11
-	mov [PDPL], eax
-	mov [PDPH_HOFF], eax	; 
+	mov [USER_PDP], eax
+	mov [KERN_PDP_HOFF], eax	; 
 	
-	lea eax, [PDPL]
+	lea eax, [USER_PDP]
 	or eax, 0b11
 	mov [PML4], eax
 
-	lea eax, [PDPH]
+	lea eax, [KERN_PDP]
 	or eax, 0b11
 	;; Also map Canonical (negative) higher half to same 1G segment
 	mov [PML4_HOFF], eax
@@ -91,7 +89,7 @@ mem_init_tables:
 	mov eax, 0x200000  ; 2MiB
 	mul ecx            ; start address of ecx-th page
 	or eax, 0b10000011 ; present + writable + huge
-	mov [PD + ecx*8], eax ; map ecx-th entry
+	mov [USER_PDS + ecx*8], eax ; map ecx-th entry
 
 	inc ecx
 	cmp ecx, 512
@@ -99,7 +97,7 @@ mem_init_tables:
 
 	ret
 
-mem_enable_ia32e:
+memory_enable_ia32e:
 
 	;; load PML4 to cr3 register (cpu uses this to access the P4 table)
 	mov eax, PML4
@@ -130,7 +128,11 @@ mem_enable_ia32e:
         mov ss, ax
 	ret
 	
-
+memory_flush_tlb:
+	mov eax, cr3
+	mov cr3, eax
+	ret
+	
 align 8
 gdt32:
 	dq GDT_NULL

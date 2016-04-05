@@ -1,30 +1,122 @@
 /* Copyright (C) 2016 by Soren Telfer - MIT License. See LICENSE.txt */
 
-#include <nubbin/kernel.h>
 #include <nubbin/kernel/console.h>
+#include <nubbin/kernel/serial.h>
+#include <nubbin/kernel/string.h>
 
-static unsigned short* video      = (unsigned short*)0x000b8000;
-static unsigned int cursor        = 0;
-static const unsigned char attrib = 0x1F;
-
-void
-console_clear()
+static int
+tag_pos(int incr)
 {
-    cursor = 0;
-    int i = 0;
-    for (i = 0; i < 80 * 25; i++)
-        video[i] = (attrib << 8) | ' ';
+    static int ctag = 0;
+    if (incr < 0) {
+        int save = ctag;
+        ctag += incr;
+        return save;
+    }
+    ctag += incr;
+    return ctag;
+}
+
+static void
+write_tag(const char* tag)
+{
+    static const char* pad = "      |";
+    size_t tagsz           = strlen(tag);
+    size_t padsz = tagsz >= 6 ? 2 : 7 - tagsz;
+    console_write(tag, tagsz);
+    console_write(&pad[tagsz], padsz);
+}
+
+static void
+do_indent(int i)
+{
+    for (int j = 0; j < i; ++j) {
+        console_putc(' ');
+    }
+}
+
+static const char*
+cur_tag(int i, const char* tag)
+{
+    static const char* tags[CONSOLE_MAX_TAGS];
+    if (tag != NULL) {
+        tags[i] = tag;
+    }
+    return tags[i];
+}
+
+static const char*
+cur_msg(int i, const char* tag)
+{
+    static const char* msgs[CONSOLE_MAX_TAGS];
+    if (tag == NULL) {
+        const char* save = msgs[i];
+        msgs[i]          = NULL;
+        return save;
+    }
+    msgs[i] = tag;
+    return msgs[i];
 }
 
 void
-console_puts(const char* msg)
+console_putc(char a)
 {
-    unsigned long off = cursor;
-    unsigned long i = 0;
-    for (; msg[i] != '\0'; i++) {
-        video[cursor + i] = (attrib << 8) | msg[i];
-    }
-    /* Add newline */
-    cursor += i;
-    cursor = (cursor / 80 + 1) * 80;
+    serial_putc(a);
+}
+
+void
+console_puts(const char* buf)
+{
+    serial_puts(buf);
+}
+
+void
+console_put(unsigned long addr, unsigned long len)
+{
+    serial_put(addr, len);
+}
+void
+console_putf(const char* fmt,
+             unsigned long addr,
+             unsigned long len,
+             unsigned long off)
+{
+    int i           = tag_pos(0);
+    const char* tag = cur_tag(i, NULL);
+    write_tag(tag);
+    do_indent(i + 1);
+    serial_putf(fmt, addr, len, off);
+}
+
+void
+console_write(const char* buf, unsigned long len)
+{
+    serial_write(buf, len);
+}
+
+void
+console_start_tagged(const char* tag, const char* msg)
+{
+    int i = tag_pos(1);
+    cur_tag(i, tag);
+    cur_msg(i, msg);
+    write_tag(tag);
+    do_indent(i);
+    console_write(msg, strlen(msg));
+    console_puts(" [..]");
+}
+
+void
+console_finish(const char* status)
+{
+    int i           = tag_pos(-1);
+    const char* tag = cur_tag(i, NULL);
+    const char* msg = cur_msg(i, NULL);
+
+    write_tag(tag);
+    do_indent(i);
+    console_write(msg, strlen(msg));
+    console_write(" [", 2);
+    console_write(status, strlen(status));
+    console_puts("]");
 }
