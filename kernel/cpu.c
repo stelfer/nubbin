@@ -11,7 +11,7 @@
 static const char* CONSOLE_TAG = "CPU";
 
 /* Relocate the local apic memory address */
-apic_local_reg_map_t*
+static apic_local_reg_map_t*
 remap_local_apic_reg()
 {
     console_start("Remaping local apic register");
@@ -23,16 +23,13 @@ remap_local_apic_reg()
         console_puts("NO ALLOC!");
         PANIC();
     }
-
-    console_putq(mem);
-
     apic_set_base_msr(mem);
 
     console_ok();
     return (apic_local_reg_map_t*)KERNEL_VADDR(mem);
 }
 
-void
+static void
 enable_local_apic_timer(apic_local_reg_map_t* map)
 {
     /* Enable the spurious interrupt vector */
@@ -43,7 +40,7 @@ enable_local_apic_timer(apic_local_reg_map_t* map)
     /* __asm__("int $32\n"); */
 }
 
-void
+static void
 update_kdata_from_local_reg_map(apic_local_reg_map_t* map)
 {
     kdata_t* kdata = kdata_get();
@@ -63,7 +60,7 @@ update_kdata_from_local_reg_map(apic_local_reg_map_t* map)
     }
 }
 
-void
+static void
 check_bsp_sanity()
 {
     uint64_t apic_base = apic_get_base_msr();
@@ -80,7 +77,7 @@ check_bsp_sanity()
     }
 }
 
-void
+static void
 bsp_init()
 {
     console_start("Initializing the BSP");
