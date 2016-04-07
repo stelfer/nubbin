@@ -22,16 +22,17 @@ write_tag(const char* tag)
 {
     static const char* pad = "      |";
     size_t tagsz           = strlen(tag);
-    size_t padsz = tagsz >= 6 ? 2 : 7 - tagsz;
-    console_write(tag, tagsz);
-    console_write(&pad[tagsz], padsz);
+    size_t padsz           = tagsz >= 6 ? 2 : 7 - tagsz;
+
+    serial_write(tag, tagsz);
+    serial_write(&pad[tagsz], padsz);
 }
 
 static void
 do_indent(int i)
 {
     for (int j = 0; j < i; ++j) {
-        console_putc(' ');
+        serial_putc(' ');
     }
 }
 
@@ -89,8 +90,18 @@ console_putf(const char* fmt,
 }
 
 void
+__console_write(const char* buf, unsigned long len)
+{
+    serial_write(buf, len);
+}
+
+void
 console_write(const char* buf, unsigned long len)
 {
+    /* int i = tag_pos(0); */
+    /* const char* tag = cur_tag(i, NULL); */
+    /* write_tag(tag); */
+    /* do_indent(i + 1); */
     serial_write(buf, len);
 }
 
@@ -102,8 +113,8 @@ console_start_tagged(const char* tag, const char* msg)
     cur_msg(i, msg);
     write_tag(tag);
     do_indent(i);
-    console_write(msg, strlen(msg));
-    console_puts(" [..]");
+    serial_write(msg, strlen(msg));
+    serial_puts(" [..]");
 }
 
 void
@@ -115,8 +126,8 @@ console_finish(const char* status)
 
     write_tag(tag);
     do_indent(i);
-    console_write(msg, strlen(msg));
-    console_write(" [", 2);
-    console_write(status, strlen(status));
-    console_puts("]");
+    serial_write(msg, strlen(msg));
+    serial_write(" [", 2);
+    serial_write(status, strlen(status));
+    serial_puts("]");
 }

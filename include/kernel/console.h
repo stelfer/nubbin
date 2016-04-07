@@ -6,13 +6,13 @@
 
 #define CONSOLE_TAG(x) static const char* CONSOLE_TAG = x
 
-void console_write(const char*, unsigned long len);
+void __console_write(const char*, unsigned long len);
 
 #define CONSOLE_COLOR_FN(name)                  \
     static inline void console_##name()         \
     {                                           \
         static const char code[] = name##_CODE; \
-        console_write(code, sizeof(code));      \
+        __console_write(code, sizeof(code));    \
     }
 
 #define bold_CODE                \
@@ -123,6 +123,8 @@ void console_putf(const char* fmt,
                   unsigned long addr,
                   unsigned long len,
                   unsigned long off);
+
+void console_write(const char*, unsigned long len);
 
 #define console_putb(x) console_put((x), 1)
 #define console_putw(x) console_put((x), 2)
