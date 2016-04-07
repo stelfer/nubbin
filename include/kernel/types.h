@@ -23,22 +23,4 @@ typedef __SIZE_TYPE__ size_t;
 
 typedef __UINTPTR_TYPE__ uintptr_t;
 
-#if __SIZEOF_SIZE_T__ == 4
-typedef long ll_t;
-typedef unsigned long llu_t;
-#else
-typedef long long ll_t;
-typedef unsigned long long llu_t;
-#endif
-
-#if __SIZEOF_LONG__ == 4
-#define ULONG_C __UINT32_C
-#define LONG_C __INT32_C
-#elif __SIZEOF_LONG__ == 8
-#define ULONG_C __UINT64_C
-#define LONG_C __INT64_C
-#else
-#error
-#endif
-
 #endif /* _TYPES_H */
