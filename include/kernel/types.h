@@ -17,13 +17,15 @@ typedef __INT64_TYPE__ int64_t;
 
 typedef __SIZE_TYPE__ size_t;
 
-typedef int8_t i8;
+typedef __UINTPTR_TYPE__ uintptr_t;
+
+typedef int8_t s8;
 typedef uint8_t u8;
-typedef int16_t i16;
+typedef int16_t s16;
 typedef uint16_t u16;
-typedef int32_t i32;
+typedef int32_t s32;
 typedef uint32_t u32;
-typedef int64_t i64;
+typedef int64_t s64;
 typedef uint64_t u64;
 
 #if __SIZEOF_SIZE_T__ == 4
