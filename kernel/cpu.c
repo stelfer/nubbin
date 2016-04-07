@@ -15,7 +15,7 @@ apic_local_reg_map_t*
 remap_local_apic_reg()
 {
     console_start("Remaping local apic register");
-    memory_mmio_init();
+    memory_percpu_init();
 
     uintptr_t mem = memory_percpu_alloc_phy(PERCPU_TYPE_LOCAL_APIC_REG_MAP,
                                             sizeof(apic_local_reg_map_t));
@@ -23,6 +23,9 @@ remap_local_apic_reg()
         console_puts("NO ALLOC!");
         PANIC();
     }
+
+    console_putq((u64)mem);
+
     apic_set_base_msr(mem);
 
     console_ok();
@@ -30,9 +33,39 @@ remap_local_apic_reg()
 }
 
 void
-bsp_init()
+enable_local_apic_timer(apic_local_reg_map_t* map)
 {
-    console_start("Initializing the BSP");
+    /* Enable the spurious interrupt vector */
+    u32 sivr = map->off_00f0.dw0;
+    sivr |= 0x0000010f | (LOCAL_APIC_SIVR_VEC << 4);
+    map->off_00f0.dw0 = sivr;
+
+    /* __asm__("int $32\n"); */
+}
+
+void
+update_kdata_from_local_reg_map(apic_local_reg_map_t* map)
+{
+    kdata_t* kdata = kdata_get();
+    console_putf("Found xxxx cpus", kdata->cpu.num_cpus, 2, 6);
+
+    /* Search for the BSP, and/or update kdata  */
+    u32 bsp_apic_id = map->off_0020.dw0;
+
+    for (u32 i = 0; i < kdata->cpu.num_cpus; ++i) {
+        if (kdata->cpu.apic_id[i] == bsp_apic_id) {
+            kdata->cpu.status[i] |= CPU_STAT_BSP;
+            kdata->cpu.lapic_reg[i] = map;
+            console_putf("cpu xxxx BSP", i, 2, 4);
+        } else {
+            console_putf("cpu xxxx", i, 2, 4);
+        }
+    }
+}
+
+void
+check_bsp_sanity()
+{
     u64 apic_base = apic_get_base_msr();
     u8 is_bsp = apic_cpu_is_bsp(apic_base);
     if (!is_bsp) {
@@ -45,24 +78,18 @@ bsp_init()
         console_puts("We booted into a disabled cpu");
         PANIC();
     }
+}
 
-    kdata_t* kdata = kdata_get();
-    console_putf("Found xxxx cpus", kdata->cpu.num_cpus, 2, 6);
+void
+bsp_init()
+{
+    console_start("Initializing the BSP");
+    check_bsp_sanity();
 
-    /* Search for the BSP  */
-    apic_local_reg_map_t* mem = remap_local_apic_reg();
-    u32 bsp_apic_id           = mem->off_0020.dw0;
+    apic_local_reg_map_t* map = remap_local_apic_reg();
+    update_kdata_from_local_reg_map(map);
+    enable_local_apic_timer(map);
 
-    for (u32 i = 0; i < kdata->cpu.num_cpus; ++i) {
-        if (kdata->cpu.apic_id[i] == bsp_apic_id) {
-            kdata->cpu.status[i] |= CPU_STAT_BSP;
-            kdata->cpu.lapic_reg[i] = mem;
-            console_putf("cpu xxxx BSP", i, 2, 4);
-
-        } else {
-            console_putf("cpu xxxx", i, 2, 4);
-        }
-    }
     console_ok();
 }
 

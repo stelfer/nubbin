@@ -13,10 +13,10 @@ get_mpt()
     return (memory_page_tables_t*)&page_table_paddr;
 }
 
-static inline memory_mmio_tbl_t*
-get_mmio_tbl()
+static inline memory_percpu_tbl_t*
+get_percpu_tbl()
 {
-    return (memory_mmio_tbl_t*)&mmio_paddr;
+    return (memory_percpu_tbl_t*)&percpu_tbl_paddr;
 }
 
 static inline const struct mem_info*
@@ -87,31 +87,35 @@ memory_map_init_finish()
 }
 
 void
-memory_mmio_init()
+memory_percpu_init()
 {
-    memory_mmio_tbl_t* mio = (memory_mmio_tbl_t*)&mmio_paddr;
-    mio->size              = sizeof(memory_mmio_tbl_t);
-    mio->num_entries       = 0;
+    /* The GDT gets pre-placed here during jump to long mode */
+    memory_percpu_tbl_t* mio = get_percpu_tbl();
+    mio->num_entries         = 1;
+    mio->entries[0].size     = MEMORY_GDT_SIZE;
+    mio->entries[0].state    = PERCPU_STATE_VALID;
+    mio->entries[0].type     = PERCPU_TYPE_GDT;
+    mio->entries[0].base     = (uintptr_t)&gdt_paddr;
+    mio->size                = sizeof(memory_percpu_tbl_t) + mio->entries[0].size;
 }
 
-void*
-memory_mmio_alloc_phy(mmio_type_t type, mmio_size_t size)
+uintptr_t
+memory_percpu_alloc_phy(percpu_type_t type, percpu_size_t size)
 {
-    memory_mmio_tbl_t* mio = get_mmio_tbl();
-    const size_t miosz     = (size_t)((char*)mio + mio->size);
-    u64 base               = align_to(miosz, MIO_ALLOC_ALIGNTO);
+    memory_percpu_tbl_t* mio = get_percpu_tbl();
+    const size_t miosz       = (size_t)((char*)mio + mio->size);
+    uintptr_t base           = align_to(miosz, MEMORY_PERCPU_ALLOC_ALIGNTO);
 
-    if ((base + size) > (u64)((char*)mio + 0x400000)) {
-        return NULL;
+    if ((base + size) > KERNEL_SYM_PADDR(page_table_paddr)) {
+        return 0;
     }
+    memory_percpu_entry_t* men = &mio->entries[mio->num_entries];
+    men->size                  = size;
+    men->state                 = PERCPU_STATE_VALID;
+    men->type                  = type;
+    men->base                  = (uintptr_t)base;
+    mio->size                  = (char*)base + size - (char*)mio;
+    mio->num_entries           = mio->num_entries + 1;
 
-    memory_mmio_entry_t* men = &mio->entries[mio->num_entries];
-    men->size                = size;
-    men->state               = MMIO_STATE_VALID;
-    men->type                = type;
-    men->base                = (void*)base;
-    mio->size                = (char*)base + size - (char*)mio;
-    mio->num_entries         = mio->num_entries + 1;
-
-    return (void*)base;
+    return base;
 }
