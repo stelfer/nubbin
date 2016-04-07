@@ -7,6 +7,7 @@
 #include <nubbin/kernel/apic.h>
 #include <nubbin/kernel.h>
 #include <nubbin/kernel/kdata.h>
+#include <nubbin/kernel/string.h>
 
 static const char* CONSOLE_TAG = "CPU";
 
@@ -41,6 +42,15 @@ enable_local_apic_timer(apic_local_reg_map_t* map)
 }
 
 static void
+write_console_cpu_info(const kdata_t* kdata, int i)
+{
+    char* sindex = "XXXX ";
+    string_hexify(sindex, i, 2, 0);
+    console_write(sindex, 5);
+    console_putq(kdata->cpu.status[i]);
+}
+
+static void
 update_kdata_from_local_reg_map(apic_local_reg_map_t* map)
 {
     kdata_t* kdata = kdata_get();
@@ -49,14 +59,12 @@ update_kdata_from_local_reg_map(apic_local_reg_map_t* map)
     /* Search for the BSP, and/or update kdata  */
     uint32_t bsp_apic_id = map->off_0020.dw0;
 
-    for (uint32_t i = 0; i < kdata->cpu.num_cpus; ++i) {
+    for (int i = 0; i < kdata->cpu.num_cpus; ++i) {
         if (kdata->cpu.apic_id[i] == bsp_apic_id) {
             kdata->cpu.status[i] |= CPU_STAT_BSP;
-            kdata->cpu.lapic_reg[i] = map;
-            console_putf("cpu xxxx BSP", i, 2, 4);
-        } else {
-            console_putf("cpu xxxx", i, 2, 4);
+            kdata->cpu.lapic_reg[i] = (uintptr_t)map;
         }
+        write_console_cpu_info(kdata, i);
     }
 }
 
