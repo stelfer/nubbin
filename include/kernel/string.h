@@ -14,4 +14,6 @@ void bzero(void* dst, size_t len);
 
 size_t strlen(const char* p);
 
+void string_hexify(char* buf, unsigned long num, int numsz, int off);
+
 #endif /* _STRING_H */
