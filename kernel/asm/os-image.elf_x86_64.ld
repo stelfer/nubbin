@@ -16,6 +16,8 @@ gdt_paddr 	   = 0x00203000;
 page_table_paddr   = 0x00400000;
 user_paddr	   = 0x00600000;
 
+cpu_stack_size     = 0x400;
+
 SECTIONS
 {
 	.boot-setup boot_paddr :
