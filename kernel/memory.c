@@ -22,7 +22,7 @@ get_mmio_tbl()
 static inline const struct mem_info*
 get_bios_mem_info()
 {
-    return (const struct mem_info*)(KERNEL_SYM_ADDR(bios_mmap));
+    return (const struct mem_info*)(KERNEL_SYM_VADDR(bios_mmap));
 }
 
 void
@@ -63,7 +63,7 @@ check_early_mappings(memory_page_tables_t* mpt)
         }
     }
 
-    void* kern_base    = (void*)0xffffffff00000000;
+    uintptr_t kern_base = (uintptr_t)0xffffffff00000000;
     const u64 pml4_off = memory_get_pml4_off(kern_base);
     if ((mpt->pml4[pml4_off] | 0x20) != ((u64)&mpt->kern_pdps[0] | 0x23)) {
         PANIC();

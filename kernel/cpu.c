@@ -17,16 +17,16 @@ remap_local_apic_reg()
     console_start("Remaping local apic register");
     memory_mmio_init();
 
-    void* mem = memory_mmio_alloc_phy(MMIO_TYPE_LOCAL_APIC_REG_MAP,
-                                      sizeof(apic_local_reg_map_t));
-    if (mem == NULL) {
+    uintptr_t mem = memory_percpu_alloc_phy(PERCPU_TYPE_LOCAL_APIC_REG_MAP,
+                                            sizeof(apic_local_reg_map_t));
+    if (mem == 0) {
         console_puts("NO ALLOC!");
+        PANIC();
     }
     apic_set_base_msr(mem);
 
     console_ok();
-    apic_local_reg_map_t* rv = KERNEL_ADDR(mem);
-    return rv;
+    return (apic_local_reg_map_t*)KERNEL_VADDR(mem);
 }
 
 void

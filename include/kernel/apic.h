@@ -85,31 +85,31 @@ struct apic_local_reg_map {
 typedef struct apic_local_reg_map apic_local_reg_map_t;
 
 static inline u8
-apic_cpu_is_bsp(u64 apic_base)
+apic_cpu_is_bsp(uintptr_t apic_base)
 {
     return (apic_base & (1 << 8)) != 0;
 }
 
 static inline u8
-apic_local_apic_enabled(u64 apic_base)
+apic_local_apic_enabled(uintptr_t apic_base)
 {
     return (apic_base & (1 << 11)) != 0;
 }
 
 static inline size_t
-apic_base_addr(u64 apic_base)
+apic_base_addr(uintptr_t apic_base)
 {
     return apic_base & 0xffffff000;
 }
 
-u32 apic_reg_read32(u64 apic_base);
+u32 apic_reg_read32(uintptr_t apic_base);
 
 static inline u8
-apic_reg_apic_id(u64 apic_base)
+apic_reg_apic_id(uintptr_t apic_base)
 {
     return apic_reg_read32(apic_base_addr(apic_base) + 0x20);
 }
 
-void apic_set_base_msr(void* addr);
+void apic_set_base_msr(uintptr_t addr);
 
 #endif /* _APIC_H */

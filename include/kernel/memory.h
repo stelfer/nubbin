@@ -10,6 +10,9 @@ extern size_t bios_mmap;
 extern size_t page_table_paddr;
 extern size_t mmio_paddr;
 extern size_t mmio_size;
+#define KERNEL_VADDR(x) (uintptr_t)((char*)x + (uintptr_t)&kernel_vaddr_off)
+#define KERNEL_SYM_VADDR(x) KERNEL_VADDR(&(x))
+#define KERNEL_SYM_PADDR(x) ((uintptr_t) & (x))
 
 // Our page tables sit on a single physical 2MiB page residing at
 // page_table_paddr.  We set aside 1 4k block for the PML4, one
@@ -73,32 +76,32 @@ typedef struct memory_mmio_tbl memory_mmio_tbl_t;
 
 enum { MIO_ALLOC_ALIGNTO = 0x1000 };
 
-static inline u32
-memory_get_off(void* virt_addr)
+static inline uintptr_t
+memory_get_off(uintptr_t virt_addr)
 {
-    return (u64)virt_addr & 0x00000000001fffff;
+    return virt_addr & 0x00000000001fffff;
 }
 
 static inline u32
-memory_get_pd_off(void* virt_addr)
+memory_get_pd_off(uintptr_t virt_addr)
 {
     return ((u64)virt_addr & 0x000000003fe00000) >> 21;
 }
 
 static inline u32
-memory_get_pdp_off(void* virt_addr)
+memory_get_pdp_off(uintptr_t virt_addr)
 {
     return ((u64)virt_addr & 0x0000007fc0000000) >> 30;
 }
 
 static inline u32
-memory_get_pml4_off(void* virt_addr)
+memory_get_pml4_off(uintptr_t virt_addr)
 {
     return ((u64)virt_addr & 0x0000ff8000000000) >> 39;
 }
 
 static u32
-memory_get_pd(void* virt_addr)
+memory_get_pd(uintptr_t virt_addr)
 {
     return (u64)virt_addr / 0x40000000;
 }
@@ -116,9 +119,6 @@ struct mem_info {
     u32 size;
     struct mem_info_entry entries[];
 } __attribute__((packed));
-
-#define KERNEL_SYM_ADDR(x) ((size_t)(&x) + (size_t)&kernel_vaddr_off)
-#define KERNEL_ADDR(x) (void*)((char*)x + (size_t)&kernel_vaddr_off)
 
 #define EBDA_ADDR \
     (size_t)(((*((uint16_t*)(0x40E))) << 4))  // *16 because it's a RM address
@@ -145,9 +145,9 @@ enum {
 
 void memory_print_bios_mmap();
 
-void* memory_map_user(void* phy_addr, void* virt_addr);
+uintptr_t memory_map_user(uintptr_t phy_addr, uintptr_t virt_addr);
 
-void* memory_map_kern(void* phy_addr, void* virt_addr);
+uintptr_t memory_map_kern(uintptr_t phy_addr, uintptr_t virt_addr);
 
 void memory_map_init_finish();
 

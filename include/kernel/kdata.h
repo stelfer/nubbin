@@ -28,7 +28,7 @@ void kdata_init();
 static inline kdata_t*
 kdata_get()
 {
-    return (kdata_t*)KERNEL_SYM_ADDR(kdata_base);
+    return (kdata_t*)KERNEL_SYM_VADDR(kdata_base);
 }
 
 #endif /* _KDATA_H */
