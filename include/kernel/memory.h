@@ -21,7 +21,7 @@ extern size_t gdt_paddr;
 // one PDP for system percpu mapping, then the rest for PDs.  The top four
 // PDs are reserved for the the kernel to do auxilliary mappings (percpu, etc).
 
-typedef u64 memory_vmem_blk_t[512];
+typedef uint64_t memory_vmem_blk_t[512];
 
 enum {
     MEMORY_NUM_USER_PDPS = 1,
@@ -60,9 +60,9 @@ enum {
 
 enum { PERCPU_STATE_UNSPEC = 0, PERCPU_STATE_VALID = 1 };
 
-typedef u16 percpu_type_t;
-typedef u16 percpu_state_t;
-typedef u32 percpu_size_t;
+typedef uint16_t percpu_type_t;
+typedef uint16_t percpu_state_t;
+typedef uint32_t percpu_size_t;
 
 struct memory_percpu_entry {
     percpu_size_t size;
@@ -78,8 +78,8 @@ enum { MEMORY_GDT_SIZE = 0x400 };
 
 struct memory_percpu_tbl {
     percpu_size_t size;
-    u32 num_entries;
-    u64 pad;
+    uint32_t num_entries;
+    uint64_t pad;
     memory_percpu_entry_t entries[MEMORY_PERCPU_MAX_ENTRIES];
 } __packed;
 typedef struct memory_percpu_tbl memory_percpu_tbl_t;
@@ -93,41 +93,41 @@ memory_get_off(uintptr_t virt_addr)
     return virt_addr & 0x00000000001fffff;
 }
 
-static inline u32
+static inline uint32_t
 memory_get_pd_off(uintptr_t virt_addr)
 {
-    return ((u64)virt_addr & 0x000000003fe00000) >> 21;
+    return ((uint64_t)virt_addr & 0x000000003fe00000) >> 21;
 }
 
-static inline u32
+static inline uint32_t
 memory_get_pdp_off(uintptr_t virt_addr)
 {
-    return ((u64)virt_addr & 0x0000007fc0000000) >> 30;
+    return ((uint64_t)virt_addr & 0x0000007fc0000000) >> 30;
 }
 
-static inline u32
+static inline uint32_t
 memory_get_pml4_off(uintptr_t virt_addr)
 {
-    return ((u64)virt_addr & 0x0000ff8000000000) >> 39;
+    return ((uint64_t)virt_addr & 0x0000ff8000000000) >> 39;
 }
 
-static u32
+static uint32_t
 memory_get_pd(uintptr_t virt_addr)
 {
-    return (u64)virt_addr / 0x40000000;
+    return (uint64_t)virt_addr / 0x40000000;
 }
 
 struct mem_info_entry {
-    u64 base;
-    u64 len;
-    u32 type;
-    u32 ext_attr;
+    uint64_t base;
+    uint64_t len;
+    uint32_t type;
+    uint32_t ext_attr;
 } __attribute__((packed));
 
 struct mem_info {
-    u16 low_mem;
-    u16 high_mem;
-    u32 size;
+    uint16_t low_mem;
+    uint16_t high_mem;
+    uint32_t size;
     struct mem_info_entry entries[];
 } __attribute__((packed));
 

@@ -16,7 +16,7 @@ extern size_t kdata_size;
 
 /* The kernel data structure held at 0x200000 */
 struct kdata {
-    u32 magic;
+    uint32_t magic;
     acpi_kdata_t acpi;
     cpu_kdata_t cpu;
 } __packed;

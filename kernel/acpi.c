@@ -80,7 +80,7 @@ void
 parse_madt_local_apic(apic_local_apic_t* h)
 {
     kdata_t* kd        = kdata_get();
-    const u32 i        = kd->cpu.num_cpus;
+    const uint32_t i        = kd->cpu.num_cpus;
     kd->cpu.apic_id[i] = h->apic_id;
     if (h->flags == ACPI_LOCAL_APIC_ENABLED) {
         kd->cpu.status[i] |= CPU_STAT_APIC_ENABLED;
@@ -94,8 +94,8 @@ parse_apic(apic_tbl_t* apic)
 {
     const size_t esize = (apic->hdr.len - sizeof(apic->hdr) -
                           sizeof(apic->lca) - sizeof(apic->flags));
-    const u8* p   = &apic->strct[0];
-    const u8* end = p + esize;
+    const uint8_t* p   = &apic->strct[0];
+    const uint8_t* end = p + esize;
     while (p != end) {
         const apic_tbl_entry_hdr_t* h = (apic_tbl_entry_hdr_t*)p;
         switch (h->type) {
@@ -124,7 +124,7 @@ parse_rsdt(rsdp_descr_t* rsdp)
     for (int i = 0; i < num_entries; ++i) {
         addr              = rsdt->strct[i];
         acpi_tbl_hdr_t* h = (acpi_tbl_hdr_t*)addr;
-        u32 sig = *((u32*)h->sig);
+        uint32_t sig = *((uint32_t*)h->sig);
         switch (sig) {
         case RSDT_SIG_APIC:
             kdata_get()->acpi.apic = (apic_tbl_t*)h;

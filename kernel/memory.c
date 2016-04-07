@@ -29,7 +29,7 @@ void
 memory_print_bios_mmap()
 {
     const struct mem_info* p = get_bios_mem_info();
-    console_putq((u64)&p->entries);
+    console_putq((uintptr_t)&p->entries);
     console_putw(p->low_mem);
     console_putw(p->high_mem);
     console_putq(p->size);
@@ -50,13 +50,13 @@ check_early_mappings(memory_page_tables_t* mpt)
     /* The user mpl entries should map to lower values, also the are marked with
      * present and accessed (probably), so we compare
      */
-    if ((mpt->pml4[0] | 0x20) != ((u64)&mpt->user_pdps[0] | 0x23)) {
+    if ((mpt->pml4[0] | 0x20) != ((uintptr_t)&mpt->user_pdps[0] | 0x23)) {
         PANIC();
     }
-    if ((mpt->user_pdps[0][0] | 0x20) != ((u64)&mpt->user_pds[0] | 0x23)) {
+    if ((mpt->user_pdps[0][0] | 0x20) != ((uintptr_t)&mpt->user_pds[0] | 0x23)) {
         PANIC();
     }
-    for (u16 i = 0; i < 512; ++i) {
+    for (unsigned i = 0; i < 512; ++i) {
         /* Blast off the low status bytes */
         if ((mpt->user_pds[0][i] & 0xffffffffffffff00) != (i * 0x200000)) {
             PANIC();
@@ -64,15 +64,15 @@ check_early_mappings(memory_page_tables_t* mpt)
     }
 
     uintptr_t kern_base = (uintptr_t)0xffffffff00000000;
-    const u64 pml4_off = memory_get_pml4_off(kern_base);
-    if ((mpt->pml4[pml4_off] | 0x20) != ((u64)&mpt->kern_pdps[0] | 0x23)) {
+    const uintptr_t pml4_off = memory_get_pml4_off(kern_base);
+    if ((mpt->pml4[pml4_off] | 0x20) != ((uintptr_t)&mpt->kern_pdps[0] | 0x23)) {
         PANIC();
     }
     /* The 508 pdps map the same linear range as the user 0 pdps, so they
      * use the same pds */
-    const u64 pdp_off = memory_get_pdp_off(kern_base);
+    const uintptr_t pdp_off = memory_get_pdp_off(kern_base);
     if ((mpt->kern_pdps[0][pdp_off] | 0x20) !=
-        ((u64)&mpt->user_pds[0] | 0x23)) {
+        ((uintptr_t)&mpt->user_pds[0] | 0x23)) {
         PANIC();
     }
     console_ok();

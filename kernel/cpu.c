@@ -24,7 +24,7 @@ remap_local_apic_reg()
         PANIC();
     }
 
-    console_putq((u64)mem);
+    console_putq(mem);
 
     apic_set_base_msr(mem);
 
@@ -36,7 +36,7 @@ void
 enable_local_apic_timer(apic_local_reg_map_t* map)
 {
     /* Enable the spurious interrupt vector */
-    u32 sivr = map->off_00f0.dw0;
+    uint32_t sivr = map->off_00f0.dw0;
     sivr |= 0x0000010f | (LOCAL_APIC_SIVR_VEC << 4);
     map->off_00f0.dw0 = sivr;
 
@@ -50,9 +50,9 @@ update_kdata_from_local_reg_map(apic_local_reg_map_t* map)
     console_putf("Found xxxx cpus", kdata->cpu.num_cpus, 2, 6);
 
     /* Search for the BSP, and/or update kdata  */
-    u32 bsp_apic_id = map->off_0020.dw0;
+    uint32_t bsp_apic_id = map->off_0020.dw0;
 
-    for (u32 i = 0; i < kdata->cpu.num_cpus; ++i) {
+    for (uint32_t i = 0; i < kdata->cpu.num_cpus; ++i) {
         if (kdata->cpu.apic_id[i] == bsp_apic_id) {
             kdata->cpu.status[i] |= CPU_STAT_BSP;
             kdata->cpu.lapic_reg[i] = map;
@@ -66,14 +66,14 @@ update_kdata_from_local_reg_map(apic_local_reg_map_t* map)
 void
 check_bsp_sanity()
 {
-    u64 apic_base = apic_get_base_msr();
-    u8 is_bsp = apic_cpu_is_bsp(apic_base);
+    uint64_t apic_base = apic_get_base_msr();
+    uint8_t is_bsp = apic_cpu_is_bsp(apic_base);
     if (!is_bsp) {
         console_puts("We booted into a non-bsp cpu");
         PANIC();
     }
 
-    u8 is_enabled = apic_local_apic_enabled(apic_base);
+    uint8_t is_enabled = apic_local_apic_enabled(apic_base);
     if (!is_enabled) {
         console_puts("We booted into a disabled cpu");
         PANIC();

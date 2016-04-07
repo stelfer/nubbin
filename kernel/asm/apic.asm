@@ -1,6 +1,7 @@
 global apic_get_base_msr
 global apic_reg_read32
 global apic_set_base_msr
+global apic_spurious_isr
 	
 bits 64
 section .text	
@@ -45,3 +46,8 @@ apic_set_base_msr:
 	pop rcx
 	pop rdx
 	ret
+
+apic_spurious_isr:
+	iretq
+
+	

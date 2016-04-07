@@ -4,16 +4,18 @@
 
 #include <nubbin/kernel/types.h>
 
-u64 apic_get_base_msr();
+enum { LOCAL_APIC_SIVR_VEC = 0xf };
+
+uint64_t apic_get_base_msr();
 
 // #define APIC_CPU_IS_BSP(AB)
 
 #define LOCAL_REG_MAP(name) \
     struct {                \
-        u32 dw0;            \
-        u32 dw1;            \
-        u32 dw2;            \
-        u32 dw3;            \
+        uint32_t dw0;            \
+        uint32_t dw1;            \
+        uint32_t dw2;            \
+        uint32_t dw3;            \
     } name
 struct apic_local_reg_map {
     LOCAL_REG_MAP(off_0000);
@@ -84,13 +86,13 @@ struct apic_local_reg_map {
 #undef LOCAL_REG_MAP
 typedef struct apic_local_reg_map apic_local_reg_map_t;
 
-static inline u8
+static inline uint8_t
 apic_cpu_is_bsp(uintptr_t apic_base)
 {
     return (apic_base & (1 << 8)) != 0;
 }
 
-static inline u8
+static inline uint8_t
 apic_local_apic_enabled(uintptr_t apic_base)
 {
     return (apic_base & (1 << 11)) != 0;
@@ -102,14 +104,18 @@ apic_base_addr(uintptr_t apic_base)
     return apic_base & 0xffffff000;
 }
 
-u32 apic_reg_read32(uintptr_t apic_base);
+uint32_t apic_reg_read32(uintptr_t apic_base);
 
-static inline u8
+static inline uint8_t
 apic_reg_apic_id(uintptr_t apic_base)
 {
     return apic_reg_read32(apic_base_addr(apic_base) + 0x20);
 }
 
 void apic_set_base_msr(uintptr_t addr);
+
+void apic_set_eoi();
+
+void apic_spurious_isr();
 
 #endif /* _APIC_H */
