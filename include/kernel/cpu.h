@@ -7,16 +7,16 @@
 
 #define MAXCPUS 8
 
-typedef unsigned char cpu_status_t;
+typedef uint8_t cpu_status_t;
 
 enum { CPU_STAT_BSP = (1 << 0), CPU_STAT_APIC_ENABLED = (1 << 1) };
 
 struct cpu_kdata {
-    unsigned char num_cpus;
+    uint8_t num_cpus;
     cpu_status_t status[MAXCPUS];
     apic_id_t apic_id[MAXCPUS];
     acpi_proc_id_t acpi_proc_id[MAXCPUS];
-    void* lapic_reg[MAXCPUS];
+    uintptr_t lapic_reg[MAXCPUS];
 } __packed;
 typedef struct cpu_kdata cpu_kdata_t;
 
