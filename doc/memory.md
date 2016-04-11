@@ -1,8 +1,8 @@
-## Memory Layout
+## Memory Layout ##
 
-### Virtual Memory
+### Virtual Memory ###
 
-Memory is mapped in 2MiB pages.
+Nubbin uses 2MiB page tables in a higher-half configuration. Before `memory_remap_lower()` is called in `main()`, both halves are identity-mapped to physical memory. After `memory_remap_lower()`, all non-application memory is unmapped from the lower, while upper stays the same.
 
 | Start  | Stop | Purpose |
 | --- |:--- | :--- |
@@ -14,9 +14,12 @@ Memory is mapped in 2MiB pages.
 | ``ffff ffff 0000 0000`` | ``ffff ffff 2000 0000`` | Kernel code
 
 
+#### Page table pointers ####
+##### Identity-mapped #####
+~~~
   PM4L[000]->PDP[000]->PD[000]: 0x0000000000000000
   PM4L[511]->PDP[511]->PD[508]: 0x0000000000000000
-
+~~~
 
 
 ### Physical Memory
