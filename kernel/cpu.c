@@ -1,12 +1,12 @@
 /* Copyright (C) 2016 by Soren Telfer - MIT License. See LICENSE.txt */
 
-#include <nubbin/kernel/cpu.h>
-#include <nubbin/kernel/console.h>
-#include <nubbin/kernel/memory.h>
+#include <nubbin/kernel.h>
 #include <nubbin/kernel/acpi.h>
 #include <nubbin/kernel/apic.h>
-#include <nubbin/kernel.h>
+#include <nubbin/kernel/console.h>
+#include <nubbin/kernel/cpu.h>
 #include <nubbin/kernel/kdata.h>
+#include <nubbin/kernel/memory.h>
 #include <nubbin/kernel/string.h>
 
 static const char* CONSOLE_TAG = "CPU";
@@ -72,7 +72,7 @@ static void
 check_bsp_sanity()
 {
     uint64_t apic_base = apic_get_base_msr();
-    uint8_t is_bsp = apic_cpu_is_bsp(apic_base);
+    uint8_t is_bsp     = apic_cpu_is_bsp(apic_base);
     if (!is_bsp) {
         console_puts("We booted into a non-bsp cpu");
         PANIC();
