@@ -3,11 +3,16 @@
 #ifndef _KERNEL_H
 #define _KERNEL_H
 
-#define PANIC() __asm__("int $3\n")
-
 #define HALT() __asm__("hlt\n");
 
 #ifndef VERSION
 #define VERSION "VERSION"
 #endif
+
+static inline void
+PANIC()
+{
+    __asm__("int $3\n");
+}
+
 #endif /* _KERNEL_H */
