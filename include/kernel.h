@@ -7,4 +7,7 @@
 
 #define HALT() __asm__("hlt\n");
 
+#ifndef VERSION
+#define VERSION "VERSION"
+#endif
 #endif /* _KERNEL_H */
