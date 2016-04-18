@@ -7,6 +7,7 @@
 #include <nubbin/kernel/serial.h>
 #include <nubbin/kernel/cpu.h>
 #include <nubbin/kernel/kdata.h>
+CONSOLE_TAG("KERN");
 
 int hello_user();
 int task_init();
