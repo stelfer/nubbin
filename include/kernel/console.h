@@ -106,13 +106,8 @@ void console_start_tagged(const char* tag, const char* msg);
 void console_finish(const char* status);
 
 #define console_start(msg) console_start_tagged(CONSOLE_TAG, msg)
-static inline void
-console_ok()
-{
-    console_green();
-    console_finish("OK");
-    console_reset();
-}
+
+void console_ok();
 
 void console_putc(char a);
 

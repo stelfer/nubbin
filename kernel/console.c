@@ -131,3 +131,11 @@ console_finish(const char* status)
     serial_write(status, strlen(status));
     serial_puts("]");
 }
+
+void
+console_ok()
+{
+    console_green();
+    console_finish("OK");
+    console_reset();
+}
