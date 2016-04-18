@@ -3,8 +3,8 @@
 #include <nubbin/kernel.h>
 #include <nubbin/kernel/acpi.h>
 #include <nubbin/kernel/console.h>
-#include <nubbin/kernel/string.h>
 #include <nubbin/kernel/kdata.h>
+#include <nubbin/kernel/string.h>
 
 CONSOLE_TAG("ACPI");
 
@@ -48,10 +48,12 @@ validate_rsdp_cksum(rsdp_descr_t* rsdp)
 static void
 print_rsdp_info(rsdp_descr_t* rsdp)
 {
-    const char* found_rsdp_msg = "RSDP = 0x0000000000000000";
-    console_putf(found_rsdp_msg, (unsigned long)rsdp, 8, 9);
-    const char* acpi_ver_msg = "version = 0x00";
-    console_putf(acpi_ver_msg, rsdp->rev + 1, 1, 12);
+    if (rsdp != NULL) {
+        const char* found_rsdp_msg = "RSDP = 0x0000000000000000";
+        console_putf(found_rsdp_msg, (unsigned long)rsdp, 8, 9);
+        const char* acpi_ver_msg = "version = 0x00";
+        console_putf(acpi_ver_msg, rsdp->rev + 1, 1, 12);
+    }
 }
 
 static acpi_tbl_hdr_t*
@@ -80,7 +82,7 @@ void
 parse_madt_local_apic(apic_local_apic_t* h)
 {
     kdata_t* kd        = kdata_get();
-    const uint32_t i        = kd->cpu.num_cpus;
+    const uint32_t i   = kd->cpu.num_cpus;
     kd->cpu.apic_id[i] = h->apic_id;
     if (h->flags == ACPI_LOCAL_APIC_ENABLED) {
         kd->cpu.status[i] |= CPU_STAT_APIC_ENABLED;
@@ -117,14 +119,14 @@ void
 parse_rsdt(rsdp_descr_t* rsdp)
 {
     console_start("Parsing RSDT");
-    size_t addr  = rsdp->rsdt_addr;
-    rsdt_t* rsdt = (rsdt_t*)addr;
+    size_t addr            = rsdp->rsdt_addr;
+    rsdt_t* rsdt           = (rsdt_t*)addr;
     kdata_get()->acpi.rsdt = rsdt;
-    const int num_entries = (rsdt->hdr.len - sizeof(rsdt->hdr)) / 4;
+    const int num_entries  = (rsdt->hdr.len - sizeof(rsdt->hdr)) / 4;
     for (int i = 0; i < num_entries; ++i) {
         addr              = rsdt->strct[i];
         acpi_tbl_hdr_t* h = (acpi_tbl_hdr_t*)addr;
-        uint32_t sig = *((uint32_t*)h->sig);
+        uint32_t sig      = *((uint32_t*)h->sig);
         switch (sig) {
         case RSDT_SIG_APIC:
             kdata_get()->acpi.apic = (apic_tbl_t*)h;
