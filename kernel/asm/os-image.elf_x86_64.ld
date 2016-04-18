@@ -6,8 +6,9 @@ kernel_vaddr 	   = kernel_vaddr_off + kernel_paddr;
 kernel_pos   	   = 0x001000;		/* physical position in output */
 kernel_stack_paddr = 0x009fffff;
 kernel_size 	   = SIZEOF(.kernel);
-user_vaddr 	   = 0x100000;
-
+user_vaddr 	   = 0x600000;
+user_size	   = SIZEOF(.user);
+user_pos 	   = kernel_pos + _user_start;
 kdata_base	   = 0x00200000;
 idt_paddr	   = 0x00201000;
 percpu_paddr	   = 0x00202000;
@@ -23,7 +24,7 @@ SECTIONS
 	.boot-setup boot_paddr :
 	{
 		*(.boot)
-		_setup_paddr = .;
+		setup_pos = .;
 		*(.setup)
 	}
 
@@ -34,9 +35,14 @@ SECTIONS
 		*.ko(.rodata*)
 		*.ko(COMMON*)
 		*.ko(.bss*)
+		/*
+		 * We need to align the start of user to 512 so that we can load
+		 * it cleanly as an ATA LSB 
+		 */
+		_user_start = ALIGN(512) - kernel_vaddr;
 	}
 
-	.user user_vaddr + SIZEOF(.kernel): AT(LOADADDR(.kernel) + SIZEOF(.kernel))
+	.user user_vaddr : AT(LOADADDR(.kernel) + _user_start)
 	{
 		*.o(.text)
 		*.o(.data*)

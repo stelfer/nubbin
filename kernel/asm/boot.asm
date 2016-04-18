@@ -1,7 +1,7 @@
 bits 16
 
 extern start16	
-extern _setup_paddr		; Defined by the linker, see linker script
+extern setup_pos		; Defined by the linker, see linker script
 extern kernel_pos
 	
 section .boot	
@@ -17,7 +17,7 @@ start:				; |
 	mov sp, 0x7c00		; |
 	mov bp, sp		; x
 	
-	mov bx, _setup_paddr	; boot loaded pos + 512
+	mov bx, setup_pos	; boot loaded pos + 512
 	shr bx, 4		; move it into es, so >> 4
 	mov es, bx		; dst segment
 	mov bx, 0		; dst offset

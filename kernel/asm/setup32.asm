@@ -6,6 +6,9 @@ extern start64
 extern kernel_paddr
 extern kernel_pos
 extern kernel_size
+extern user_paddr
+extern user_pos
+extern user_size
 extern ata_do_st_read
 extern ata_do_st_softrst
 extern memory_map_init_early
@@ -16,6 +19,7 @@ start32:
 	call check_long_mode
 	call memory_map_init_early
 	call load_kernel
+ 	call load_user
 	call memory_enable_ia32e
 	jmp 0x08:start64
 
@@ -39,18 +43,25 @@ check_long_mode:
 	call print_string_pm
 	hlt
 
-;;; load the kernel with a 28-bit ATA PIO on the boot drive (i.e. bus0-master)	
-load_kernel:
+
+;;; In: EDI -> dest buffer, esi -> bytes to read, edx -> pos
+;;; Out: CF on error, EAX -> number of blocks written
+load:
+	push edx
+
 	mov dx, 03F6h		; First bus
 	call ata_do_st_softrst
-	jc .load_kernel_err
+	jnc .no_error
+	ret
+.no_error:
 
 	;; Figure out the kernel size in sectors
-	mov eax, kernel_size
+	mov eax, esi
 	mov edx, 0
 	mov ecx, 512
 	div ecx
-	
+
+	;; If kernel_size % 512 > 0, then grab one extra sector
 	test edx, edx
 	jz .noextra
 	inc eax
@@ -58,17 +69,41 @@ load_kernel:
 	mov bl, al
 
 	;; Calculate the offset from the start of the drive
-	mov ecx, kernel_pos
+	pop ecx
 	shr ecx, 9
 
 	mov dx, 01f0h		; First bus
-	mov edi, kernel_paddr
 
 	call ata_do_st_read
-	jc .load_kernel_err
+
+	sub eax, ebx
 	ret
-.load_kernel_err:
-	mov dx, LOAD_ERR_MSG
+
+load_kernel:
+	mov edi, kernel_paddr
+	mov esi, kernel_size
+	mov edx, kernel_pos
+	call load
+	jc .error
+	test eax, eax
+	jz .error
+	ret
+.error:
+	mov dx, KERN_LOAD_ERR_MSG
+	call print_string_pm
+	jmp $
+
+load_user:
+	mov edi, user_paddr
+	mov esi, user_size
+	mov edx, user_pos
+	call load
+	jc .error
+	test eax, eax
+	jz .error
+	ret
+.error:
+	mov dx, USER_LOAD_ERR_MSG
 	call print_string_pm
 	jmp $
 
@@ -76,5 +111,6 @@ load_kernel:
 
 NO_LONG_MODE_MSG db "Err:No Long Mode", 0
 IN_PROT_MODE_MSG db "In Protected Mode",0
-LOAD_ERR_MSG     db "Error loading kernel",0	
+KERN_LOAD_ERR_MSG     db "Error loading kernel code",0	
+USER_LOAD_ERR_MSG     db "Error loading user code",0	
 STARTING_LONG_MODE_MSG db "Starting Long Mode", 0
