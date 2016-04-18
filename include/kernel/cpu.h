@@ -2,9 +2,9 @@
 #ifndef _CPU_H
 #define _CPU_H
 
-#include <nubbin/kernel/types.h>
 #include <nubbin/kernel/acpi.h>
 #include <nubbin/kernel/apic.h>
+#include <nubbin/kernel/types.h>
 
 #define MAXCPUS 8
 
@@ -30,6 +30,7 @@ struct cpu_zone {
     uint8_t stack[CPU_STACK_SIZE];
     apic_local_reg_map_t lapic_reg;
 } __packed;
+typedef struct cpu_zone cpu_zone_t;
 
 void cpu_init();
 

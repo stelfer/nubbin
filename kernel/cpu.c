@@ -11,23 +11,11 @@
 
 static const char* CONSOLE_TAG = "CPU";
 
-/* Relocate the local apic memory address */
-static apic_local_reg_map_t*
-remap_local_apic_reg()
+static cpu_zone_t*
+alloc_cpu_zone()
 {
-    console_start("Remaping local apic register");
-    memory_percpu_init();
-
-    uintptr_t mem = memory_percpu_alloc_phy(PERCPU_TYPE_LOCAL_APIC_REG_MAP,
-                                            sizeof(apic_local_reg_map_t));
-    if (mem == 0) {
-        console_puts("NO ALLOC!");
-        PANIC();
-    }
-    apic_set_base_msr(mem);
-
-    console_ok();
-    return (apic_local_reg_map_t*)KERNEL_VADDR(mem);
+    return (cpu_zone_t*)KERNEL_VADDR(
+        memory_percpu_alloc_phy(PERCPU_TYPE_ZONE, sizeof(cpu_zone_t)));
 }
 
 static void
@@ -91,10 +79,21 @@ bsp_init()
     console_start("Initializing the BSP");
     check_bsp_sanity();
 
-    apic_local_reg_map_t* map = remap_local_apic_reg();
-    update_kdata_from_local_reg_map(map);
-    enable_local_apic_timer(map);
+    memory_percpu_init();
 
+    console_start("Allocating a zone for the BSP");
+    cpu_zone_t* zone = alloc_cpu_zone();
+    if (zone == 0) {
+        console_puts("Can't alloc!");
+        PANIC();
+    } else {
+        console_ok();
+        console_start("Remapping local apic register");
+        apic_set_base_msr((uintptr_t)&zone->lapic_reg);
+        update_kdata_from_local_reg_map(&zone->lapic_reg);
+        enable_local_apic_timer(&zone->lapic_reg);
+        console_ok();
+    }
     console_ok();
 }
 

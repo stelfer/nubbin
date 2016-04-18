@@ -2,8 +2,8 @@
 #ifndef _MEMORY_H
 #define _MEMORY_H
 
-#include <nubbin/kernel/types.h>
 #include <nubbin/kernel/intrinsics.h>
+#include <nubbin/kernel/types.h>
 
 extern size_t kernel_vaddr_off;
 extern size_t bios_mmap;
@@ -52,11 +52,7 @@ enum { KERN_PDP_USER = 0, KERN_PDP_PERCPU = 1 };
  * This allows us to dynamically use the area to provide physical mappings.
  */
 
-enum {
-    PERCPU_TYPE_UNSPEC             = 0,
-    PERCPU_TYPE_LOCAL_APIC_REG_MAP = 1,
-    PERCPU_TYPE_GDT                = 2
-};
+enum { PERCPU_TYPE_UNSPEC = 0, PERCPU_TYPE_ZONE = 1, PERCPU_TYPE_GDT = 2 };
 
 enum { PERCPU_STATE_UNSPEC = 0, PERCPU_STATE_VALID = 1 };
 
