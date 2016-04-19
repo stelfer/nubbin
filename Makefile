@@ -4,7 +4,7 @@
 TARGET_CCWARN 		+= -Wno-unused-function -Wno-unused-variable -Wno-macro-redefined
 TARGET_CCFLAGS		+= -ffreestanding
 
-QEMU			:= /usr/local/bin/qemu-system-x86_64 -cpu kvm64 -smp 2
+QEMU			:= /usr/local/bin/qemu-system-x86_64 -cpu kvm64 -smp 4
 QEMU_NOGRAPHIC		:= -nographic
 # QEMU_DEBUG		:= -s -S
 QEMU_SERIAL		:= -serial mon:stdio --no-reboot -d int #int,exec,cpu,mmu,pcall,guest_errors
