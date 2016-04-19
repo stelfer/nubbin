@@ -36,4 +36,6 @@ void cpu_init();
 
 void cpu_spin_here();
 
+void cpu_move_stack(uintptr_t new_top, uintptr_t old_top);
+
 #endif /* _CPU_H */

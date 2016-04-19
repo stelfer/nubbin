@@ -9,6 +9,8 @@
 #include <nubbin/kernel/memory.h>
 #include <nubbin/kernel/string.h>
 
+extern uintptr_t kernel_stack_paddr;
+
 static const char* CONSOLE_TAG = "CPU";
 
 static cpu_zone_t*
@@ -92,6 +94,13 @@ bsp_init()
         apic_set_base_msr((uintptr_t)&zone->lapic_reg);
         update_kdata_from_local_reg_map(&zone->lapic_reg);
         enable_local_apic_timer(&zone->lapic_reg);
+        console_ok();
+
+        /* This is a little unsafe... Any pushed RBP's wont' be modified to hit
+         * the new addresses. But this is why we are doing it early */
+        console_start("Moving stack");
+        cpu_move_stack((uintptr_t)&zone->stack[CPU_STACK_SIZE - 1],
+                       (uintptr_t)&kernel_stack_paddr);
         console_ok();
     }
     console_ok();
