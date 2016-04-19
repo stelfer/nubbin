@@ -4,11 +4,15 @@
 TARGET_CCWARN 		+= -Wno-unused-function -Wno-unused-variable -Wno-macro-redefined
 TARGET_CCFLAGS		+= -ffreestanding
 
-QEMU			:= /usr/local/bin/qemu-system-x86_64 -cpu kvm64 -smp 4
+QEMU			:= /usr/local/bin/qemu-system-x86_64
+QEMU_CPU		:= -cpu kvm64,+ssse3,+sse4.1,+sse4.2,-x2apic,-vme
+QEMU_NUMA		:= -numa node,nodeid=0,cpus=0-3,mem=512M -numa node,nodeid=1,cpus=4-7,mem=512M
+QEMU_SMP		:= -smp sockets=2,cores=2,threads=2
+QEMU_MACHINE		:= $(QEMU_CPU) $(QEMU_NUMA) $(QEMU_SMP)
 QEMU_NOGRAPHIC		:= -nographic
 # QEMU_DEBUG		:= -s -S
 QEMU_SERIAL		:= -serial mon:stdio --no-reboot -d int #int,exec,cpu,mmu,pcall,guest_errors
-QEMU_IMAGE_ARGS		:= $(QEMU_DEBUG) $(QEMU_SERIAL) $(QEMU_NOGRAPHIC) -m 1G
+QEMU_IMAGE_ARGS		:= $(QEMU_MACHINE) $(QEMU_DEBUG) $(QEMU_SERIAL) $(QEMU_NOGRAPHIC) -m 1G
 #-boot a -fda
 QEMU_KERNEL_ARGS	:= -kernel
 
