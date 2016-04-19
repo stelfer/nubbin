@@ -15,4 +15,6 @@ PANIC()
     __asm__("int $3\n");
 }
 
+#define UNSUPPORTED PANIC
+
 #endif /* _KERNEL_H */
