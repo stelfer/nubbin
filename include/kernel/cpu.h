@@ -33,7 +33,7 @@ struct cpu_zone {
 typedef struct cpu_zone cpu_zone_t;
 
 static inline uint32_t
-cpu_get_apic_id(cpu_zone_t* zone)
+cpu_zone_get_apic_id(cpu_zone_t* zone)
 {
     return zone->lapic_reg.off_0020.dw0;
 }

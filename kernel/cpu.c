@@ -13,10 +13,17 @@ extern uintptr_t kernel_stack_paddr;
 
 static const char* CONSOLE_TAG = "CPU";
 
+uintptr_t cpu_trampoline_get_zone_stack_addr();
+
 void
 cpu_trampoline()
 {
+    uintptr_t zone = cpu_trampoline_get_zone_stack_addr() - CPU_STACK_SIZE;
     console_start("Trampoline");
+    console_write("ZONE: ", 6);
+    console_putq(zone);
+
+    kdata_t* kdata = kdata_get();
     for (;;)
         ;
 }
@@ -73,10 +80,15 @@ static void
 remap_lapic(cpu_zone_t* zone)
 {
     console_start("Remapping local apic register");
-    apic_set_base_msr((uintptr_t)&zone->lapic_reg);
 
+    uint64_t apic_base = apic_get_base_msr();
+    console_putq(apic_base);
+    apic_set_base_msr((uintptr_t)&zone->lapic_reg);
+    apic_base = apic_get_base_msr();
+    console_putq(apic_base);
+    console_putq(apic_cpu_is_bsp(apic_base));
     kdata_t* kdata   = kdata_get();
-    uint32_t apic_id = cpu_get_apic_id(zone);
+    uint32_t apic_id = cpu_zone_get_apic_id(zone);
     if (apic_id > kdata->cpu.num_cpus) {
         console_puts("Bad APIC ID");
         PANIC();
@@ -136,7 +148,7 @@ cpu_bsp_init()
         cpu_zone_init(zone);
 
         kdata_t* kdata   = kdata_get();
-        uint32_t apic_id = cpu_get_apic_id(zone);
+        uint32_t apic_id = cpu_zone_get_apic_id(zone);
         kdata->cpu.status[apic_id] |= CPU_STAT_BSP;
     }
     console_ok();

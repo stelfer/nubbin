@@ -2,6 +2,7 @@
 global cpu_spin_here
 global cpu_move_stack
 
+global cpu_trampoline_get_zone_stack_addr
 	
 bits 64
 section .text
@@ -33,5 +34,15 @@ cpu_move_stack:
 	ret
 
 	
+cpu_get_apic_id:
+	mov eax, 0x0000000B
+	cpuid
 	
 	
+
+cpu_trampoline_get_zone_stack_addr:
+	;; cpu_trampoline() will push rsp, mov rbp, rsp on entry, so we use that to find the
+	;; top of the stack
+	mov rax, rbp
+	add rax, 8
+	ret
