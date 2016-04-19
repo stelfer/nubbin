@@ -15,19 +15,6 @@ static const char* CONSOLE_TAG = "CPU";
 
 uintptr_t cpu_trampoline_get_zone_stack_addr();
 
-void
-cpu_trampoline()
-{
-    uintptr_t zone = cpu_trampoline_get_zone_stack_addr() - CPU_STACK_SIZE;
-    console_start("Trampoline");
-    console_write("ZONE: ", 6);
-    console_putq(zone);
-
-    kdata_t* kdata = kdata_get();
-    for (;;)
-        ;
-}
-
 static cpu_zone_t*
 alloc_cpu_zone()
 {
@@ -76,17 +63,15 @@ check_bsp_sanity()
     }
 }
 
-static void
+static int
 remap_lapic(cpu_zone_t* zone)
 {
     console_start("Remapping local apic register");
 
-    uint64_t apic_base = apic_get_base_msr();
-    console_putq(apic_base);
-    apic_set_base_msr((uintptr_t)&zone->lapic_reg);
+    uintptr_t apic_base = (uintptr_t)&zone->lapic_reg;
+    apic_set_base_msr(apic_base);
     apic_base = apic_get_base_msr();
-    console_putq(apic_base);
-    console_putq(apic_cpu_is_bsp(apic_base));
+
     kdata_t* kdata   = kdata_get();
     uint32_t apic_id = cpu_zone_get_apic_id(zone);
     if (apic_id > kdata->cpu.num_cpus) {
@@ -95,6 +80,42 @@ remap_lapic(cpu_zone_t* zone)
     }
     kdata->cpu.zone[apic_id] = (uintptr_t)zone;
     console_ok();
+    return apic_cpu_is_bsp(apic_base);
+}
+
+/*
+ * Main entry-point for every cpu
+ */
+void
+cpu_trampoline()
+{
+    cpu_zone_t* zone =
+        (cpu_zone_t*)(cpu_trampoline_get_zone_stack_addr() - CPU_STACK_SIZE);
+    if (zone == 0) {
+        console_puts("Bad ZONE address");
+        PANIC();
+    }
+    console_start("Trampoline");
+    console_write("ZONE: ", 6);
+    console_putq((uintptr_t)zone);
+
+    int is_bsp = remap_lapic(zone);
+    console_write("BSP: ", 5);
+    console_putb(is_bsp);
+
+    uint32_t apic_id = cpu_zone_get_apic_id(zone);
+    console_write("APIC_ID: ", 9);
+    console_putd(apic_id);
+
+    kdata_t* kdata = kdata_get();
+    if (is_bsp) {
+        kdata->cpu.status[apic_id] |= CPU_STAT_BSP;
+    }
+
+    enable_local_apic_timer(zone);
+
+    for (;;)
+        ;
 }
 
 static void
@@ -123,14 +144,6 @@ fixup_stack(cpu_zone_t* zone)
 }
 
 void
-cpu_zone_init(cpu_zone_t* zone)
-{
-    remap_lapic(zone);
-    enable_local_apic_timer(zone);
-    fixup_stack(zone);
-}
-
-void
 cpu_bsp_init()
 {
     console_start("Initializing the BSP");
@@ -145,11 +158,7 @@ cpu_bsp_init()
         PANIC();
     } else {
         console_ok();
-        cpu_zone_init(zone);
-
-        kdata_t* kdata   = kdata_get();
-        uint32_t apic_id = cpu_zone_get_apic_id(zone);
-        kdata->cpu.status[apic_id] |= CPU_STAT_BSP;
+        fixup_stack(zone);
     }
     console_ok();
 }
