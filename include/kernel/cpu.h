@@ -13,11 +13,11 @@ typedef uint8_t cpu_status_t;
 enum { CPU_STAT_BSP = (1 << 0), CPU_STAT_APIC_ENABLED = (1 << 1) };
 
 struct cpu_kdata {
+    /* Indexed by APIC_ID */
     uint8_t num_cpus;
     cpu_status_t status[MAXCPUS];
-    apic_id_t apic_id[MAXCPUS];
     acpi_proc_id_t acpi_proc_id[MAXCPUS];
-    uintptr_t lapic_reg[MAXCPUS];
+    uintptr_t zone[MAXCPUS];
 } __packed;
 typedef struct cpu_kdata cpu_kdata_t;
 
@@ -31,6 +31,12 @@ struct cpu_zone {
     apic_local_reg_map_t lapic_reg;
 } __packed;
 typedef struct cpu_zone cpu_zone_t;
+
+static inline uint32_t
+cpu_get_apic_id(cpu_zone_t* zone)
+{
+    return zone->lapic_reg.off_0020.dw0;
+}
 
 void cpu_bsp_init();
 

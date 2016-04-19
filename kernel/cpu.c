@@ -29,14 +29,18 @@ alloc_cpu_zone()
 }
 
 static void
-enable_local_apic_timer(apic_local_reg_map_t* map)
+enable_local_apic_timer(cpu_zone_t* zone)
 {
+    console_start("Enabling local apic timer");
+
+    apic_local_reg_map_t* map = &zone->lapic_reg;
     /* Enable the spurious interrupt vector */
     uint32_t sivr = map->off_00f0.dw0;
     sivr |= 0x0000010f | (LOCAL_APIC_SIVR_VEC << 4);
     map->off_00f0.dw0 = sivr;
 
     /* __asm__("int $32\n"); */
+    console_ok();
 }
 
 static void
@@ -46,24 +50,6 @@ write_console_cpu_info(const kdata_t* kdata, int i)
     string_hexify(sindex, i, 2, 0);
     console_write(sindex, 5);
     console_putq(kdata->cpu.status[i]);
-}
-
-static void
-update_kdata_from_local_reg_map(apic_local_reg_map_t* map)
-{
-    kdata_t* kdata = kdata_get();
-    console_putf("Found xxxx cpus", kdata->cpu.num_cpus, 2, 6);
-
-    /* Search for the BSP, and/or update kdata  */
-    uint32_t bsp_apic_id = map->off_0020.dw0;
-
-    for (int i = 0; i < kdata->cpu.num_cpus; ++i) {
-        if (kdata->cpu.apic_id[i] == bsp_apic_id) {
-            kdata->cpu.status[i] |= CPU_STAT_BSP;
-            kdata->cpu.lapic_reg[i] = (uintptr_t)map;
-        }
-        write_console_cpu_info(kdata, i);
-    }
 }
 
 static void
@@ -83,16 +69,25 @@ check_bsp_sanity()
     }
 }
 
-void
-cpu_zone_init(cpu_zone_t* zone)
+static void
+remap_lapic(cpu_zone_t* zone)
 {
-    console_ok();
     console_start("Remapping local apic register");
     apic_set_base_msr((uintptr_t)&zone->lapic_reg);
-    update_kdata_from_local_reg_map(&zone->lapic_reg);
-    enable_local_apic_timer(&zone->lapic_reg);
-    console_ok();
 
+    kdata_t* kdata   = kdata_get();
+    uint32_t apic_id = cpu_get_apic_id(zone);
+    if (apic_id > kdata->cpu.num_cpus) {
+        console_puts("Bad APIC ID");
+        PANIC();
+    }
+    kdata->cpu.zone[apic_id] = (uintptr_t)zone;
+    console_ok();
+}
+
+static void
+fixup_stack(cpu_zone_t* zone)
+{
     /* This is a little unsafe... Any pushed RBP's wont' be modified to hit
      * the new addresses. But this is why we are doing it early, and it
      * won't matter anyway since we are going to replace the old values here
@@ -102,10 +97,8 @@ cpu_zone_init(cpu_zone_t* zone)
                    (uintptr_t)&kernel_stack_paddr);
     console_ok();
 
+    console_start("Rewriting stack");
     /* Finish fixing up the stack */
-
-    console_putq(*(uintptr_t*)&zone->stack[CPU_STACK_SIZE - 2 * 8]);
-
     /* The second stack entry points to the first */
     *((uintptr_t*)&zone->stack[CPU_STACK_SIZE - 2 * 8]) =
         (uintptr_t)&zone->stack[CPU_STACK_SIZE - 1 * 8];
@@ -114,7 +107,15 @@ cpu_zone_init(cpu_zone_t* zone)
     *((uintptr_t*)&zone->stack[CPU_STACK_SIZE - 1 * 8]) =
         (uintptr_t)cpu_trampoline;
 
-    console_putq(*(uintptr_t*)&zone->stack[CPU_STACK_SIZE - 2 * 8]);
+    console_ok();
+}
+
+void
+cpu_zone_init(cpu_zone_t* zone)
+{
+    remap_lapic(zone);
+    enable_local_apic_timer(zone);
+    fixup_stack(zone);
 }
 
 void
@@ -131,12 +132,12 @@ cpu_bsp_init()
         console_puts("Can't alloc!");
         PANIC();
     } else {
+        console_ok();
         cpu_zone_init(zone);
+
+        kdata_t* kdata   = kdata_get();
+        uint32_t apic_id = cpu_get_apic_id(zone);
+        kdata->cpu.status[apic_id] |= CPU_STAT_BSP;
     }
     console_ok();
-}
-
-void
-cpu_init()
-{
 }

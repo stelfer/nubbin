@@ -81,13 +81,12 @@ find_tbl(rsdp_descr_t* rsdp, const char* name)
 void
 parse_madt_local_apic(apic_local_apic_t* h)
 {
-    kdata_t* kd        = kdata_get();
-    const uint32_t i   = kd->cpu.num_cpus;
-    kd->cpu.apic_id[i] = h->apic_id;
+    kdata_t* kd             = kdata_get();
+    const uint32_t i        = h->apic_id;
+    kd->cpu.acpi_proc_id[i] = h->acpi_proc_id;
     if (h->flags == ACPI_LOCAL_APIC_ENABLED) {
         kd->cpu.status[i] |= CPU_STAT_APIC_ENABLED;
     }
-    kd->cpu.acpi_proc_id[0] = h->acpi_proc_id;
     ++kd->cpu.num_cpus;
 }
 
