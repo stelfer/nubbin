@@ -24,8 +24,11 @@ default_handler:
 	jmp $
 	iretq
 
-;;; In: RDI -> descriptor address, RSI-> obj, DX-> TYPE
+;;; In: RDI -> descriptor index, RSI-> obj, DX-> TYPE
 load_descriptor:
+	push rdi
+	shl rdi, 4
+	lea rdi, [idt_paddr + rdi]
 	mov rax, rsi
 	mov word [rdi], ax 		; off 0-15
 	mov word [rdi + 2], 0x08	; segment
@@ -35,6 +38,7 @@ load_descriptor:
 	shr rax, 16
 	mov dword [rdi + 8], eax 	; off 32-63
 	mov dword [rdi + 12], 0		; reserved
+	pop rdi
 	ret
 	
 idt_init:
@@ -47,12 +51,11 @@ idt_init:
 	mov rsi, default_handler
 	xor rdx, rdx
 	mov dx, IDT_PRESENT | IDT_TYPE_INTR_GATE
-	xor ecx, ecx
+	xor rdi, rdi
 .loop:
-	lea rdi, [idt_paddr + ecx]
 	call load_descriptor
-	add ecx, 16
-	cmp ecx, 256*16
+	add rdi, 1
+	cmp rdi, 256
 	jne .loop
 .done:
 	lidt [idtr64]
