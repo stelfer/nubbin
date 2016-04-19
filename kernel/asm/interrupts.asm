@@ -1,4 +1,5 @@
 global idt_init
+global interrupt_write_gate
 	
 extern idt_paddr
 extern serial_puts
@@ -25,7 +26,7 @@ default_handler:
 	iretq
 
 ;;; In: RDI -> descriptor index, RSI-> obj, DX-> TYPE
-load_descriptor:
+interrupt_write_gate:
 	push rdi
 	shl rdi, 4
 	lea rdi, [idt_paddr + rdi]
@@ -53,7 +54,7 @@ idt_init:
 	mov dx, IDT_PRESENT | IDT_TYPE_INTR_GATE
 	xor rdi, rdi
 .loop:
-	call load_descriptor
+	call interrupt_write_gate
 	add rdi, 1
 	cmp rdi, 256
 	jne .loop
