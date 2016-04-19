@@ -3,9 +3,9 @@
 #ifndef _ACPI_H
 #define _ACPI_H
 
-#include <nubbin/kernel/stddef.h>
-#include <nubbin/kernel/memory.h>
 #include <nubbin/kernel/intrinsics.h>
+#include <nubbin/kernel/memory.h>
+#include <nubbin/kernel/stddef.h>
 
 #define RSDP_SIG 0x2052545020445352
 
@@ -44,6 +44,69 @@ struct apic_tbl {
     unsigned char strct[];
 } __packed;
 typedef struct apic_tbl apic_tbl_t;
+
+static inline size_t
+apic_tbl_size(apic_tbl_t* apic)
+{
+    return (apic->hdr.len - sizeof(apic->hdr) - sizeof(apic->lca) -
+            sizeof(apic->flags));
+}
+
+struct srat_tbl {
+    acpi_tbl_hdr_t hdr;
+    uint32_t res1;
+    uint64_t res2;
+    unsigned char strct[];
+} __packed;
+typedef struct srat_tbl srat_tbl_t;
+
+static inline size_t
+srat_tbl_size(srat_tbl_t* srat)
+{
+    return (srat->hdr.len - sizeof(srat->hdr) - sizeof(srat->res1) -
+            sizeof(srat->res2));
+}
+
+struct srat_tbl_lapic_affnty_entry {
+    uint8_t type;
+    uint8_t length;
+    uint8_t domain_low;
+    uint8_t apic_id;
+    uint32_t flags;
+    uint8_t sapic_eid;
+    uint32_t domain_high : 24;
+    uint32_t clk_domain;
+} __packed;
+typedef struct srat_tbl_lapic_affnty_entry srat_tbl_lapic_affnty_entry_t;
+
+struct srat_tbl_mem_affnty_entry {
+    uint8_t type;
+    uint8_t length;
+    uint32_t domain;
+    uint16_t res1;
+    uint32_t base_low;
+    uint32_t base_high;
+    uint32_t length_low;
+    uint32_t length_high;
+    uint32_t res2;
+    uint32_t flags;
+    uint64_t res3;
+} __packed;
+typedef struct srat_tbl_mem_affnty_entry srat_tbl_mem_affnty_entry_t;
+
+enum {
+    SRAT_MEM_ENABLED       = (1 << 0),
+    SRAT_MEM_HOT_PLUGGABLE = (1 << 1),
+    SRAT_MEM_NVM           = (1 << 2)
+};
+
+struct srat_tbl_common_entry {
+    uint8_t type;
+    uint8_t length;
+} __packed;
+typedef struct srat_tbl_common_entry srat_tbl_common_entry_t;
+
+enum { SRAT_LAPIC_AFFNTY = 0, SRAT_MEM_AFFNTY = 1, SRAT_LAPIC_X2_AFFNTY = 2 };
 
 struct apic_tbl_entry_hdr {
     unsigned char type;
@@ -98,6 +161,7 @@ typedef enum {
 struct acpi_kdata {
     rsdt_t* rsdt;
     apic_tbl_t* apic;
+    srat_tbl_t* srat;
 } __packed;
 typedef struct acpi_kdata acpi_kdata_t;
 
@@ -108,5 +172,6 @@ void acpi_init();
 #define RSDT_SIG_SSDT 0x54445353
 #define RSDT_SIG_HPET 0x54455048
 #define RSDT_SIG_FACP 0x50434146
-
+#define RSDT_SIG_SRAT 0x54415253
+#define RSDT_SIG_SLIT 0x54494c53
 #endif /* _ACPI_H */

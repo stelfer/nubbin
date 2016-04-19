@@ -49,10 +49,9 @@ static void
 print_rsdp_info(rsdp_descr_t* rsdp)
 {
     if (rsdp != NULL) {
-        const char* found_rsdp_msg = "RSDP = 0x0000000000000000";
-        console_putf(found_rsdp_msg, (unsigned long)rsdp, 8, 9);
-        const char* acpi_ver_msg = "version = 0x00";
-        console_putf(acpi_ver_msg, rsdp->rev + 1, 1, 12);
+        console_putf(
+            "RSDP    = 0x0000000000000000", (unsigned long)rsdp, 8, 12);
+        console_putf("VERSION = 0x00", rsdp->rev + 1, 1, 12);
     }
 }
 
@@ -81,20 +80,30 @@ find_tbl(rsdp_descr_t* rsdp, const char* name)
 void
 parse_madt_local_apic(apic_local_apic_t* h)
 {
-    kdata_t* kd             = kdata_get();
-    const uint32_t i        = h->apic_id;
-    kd->cpu.acpi_proc_id[i] = h->acpi_proc_id;
-    if (h->flags == ACPI_LOCAL_APIC_ENABLED) {
-        kd->cpu.status[i] |= CPU_STAT_APIC_ENABLED;
+    console_start("Parsing MADT entry");
+
+    uint32_t cpu_id = cpu_id_from_apic_id(h->apic_id);
+    kdata_t* kd     = kdata_get();
+    if (kd->cpu.info[cpu_id].apic_id != h->apic_id) {
+        console_puts("Something wrong here, apic ids don't line up");
+        PANIC();
     }
+    cpu_kdata_info_t* info = &kd->cpu.info[cpu_id];
+    info->acpi_proc_id     = h->acpi_proc_id;
+    info->status |= CPU_STAT_APIC_ENABLED;
     ++kd->cpu.num_cpus;
+
+    console_putf("APIC_ID      = 0x00", h->apic_id, 1, 17);
+    console_putf("ACPI_PROC_ID = 0x00000000", h->acpi_proc_id, 4, 17);
+    console_putf("FLAGS        = 0x00", h->flags, 1, 17);
+    console_ok();
 }
 
 void
 parse_apic(apic_tbl_t* apic)
 {
-    const size_t esize = (apic->hdr.len - sizeof(apic->hdr) -
-                          sizeof(apic->lca) - sizeof(apic->flags));
+    console_start("Parsring MADT");
+    const size_t esize = apic_tbl_size(apic);
     const uint8_t* p   = &apic->strct[0];
     const uint8_t* end = p + esize;
     while (p != end) {
@@ -112,6 +121,73 @@ parse_apic(apic_tbl_t* apic)
         }
         p += h->len;
     }
+    console_ok();
+}
+
+void
+parse_srat_lapic_affnty(srat_tbl_lapic_affnty_entry_t* h)
+{
+    console_start("Parsing LAPIC affinity entry");
+
+    uint32_t domain        = (h->domain_high << 7) | h->domain_low;
+    uint8_t apic_id        = h->apic_id;
+    uint32_t cpu_id        = cpu_id_from_apic_id(apic_id);
+    kdata_t* kd            = kdata_get();
+    cpu_kdata_info_t* info = &kd->cpu.info[cpu_id];
+    info->id               = cpu_id;
+    info->apic_id          = apic_id;
+    info->domain           = domain;
+
+    console_putf("DOMAIN     = 0x00000000", domain, 4, 15);
+    console_putf("APIC_ID    = 0x00", apic_id, 1, 15);
+    console_putf("CLK_DOMAIN = 0x00000000", h->clk_domain, 4, 15);
+    console_putf("SAPICID    = 0x00", h->sapic_eid, 1, 15);
+    console_ok();
+}
+
+void
+parse_srat_mem_affnty(srat_tbl_mem_affnty_entry_t* h)
+{
+    console_start("Parsing Memory affinity entry");
+
+    uint64_t base   = (h->base_high << 31) | h->base_low;
+    uint64_t length = (h->length_high) << 31 | h->length_low;
+
+    console_putf("DOMAIN     = 0x00000000", h->domain, 4, 15);
+    console_putf("BASE       = 0x0000000000000000", base, 8, 15);
+    console_putf("LENGTH     = 0x0000000000000000", length, 8, 15);
+    console_putf("FLAGS      = 0x00000000", h->flags, 4, 15);
+    console_ok();
+}
+
+void
+parse_srat(srat_tbl_t* srat)
+{
+    console_start("Parsing SRAT");
+    const size_t esize = srat_tbl_size(srat);
+
+    const uint8_t* p   = &srat->strct[0];
+    const uint8_t* end = p + esize;
+    while (p != end) {
+        const srat_tbl_common_entry_t* h = (srat_tbl_common_entry_t*)p;
+        switch (h->type) {
+        case SRAT_LAPIC_AFFNTY:
+            parse_srat_lapic_affnty((srat_tbl_lapic_affnty_entry_t*)p);
+            break;
+        case SRAT_MEM_AFFNTY:
+            parse_srat_mem_affnty((srat_tbl_mem_affnty_entry_t*)p);
+            break;
+        case SRAT_LAPIC_X2_AFFNTY:
+            UNSUPPORTED();
+            /* TODO handle X2 stuff */
+            break;
+        default:
+            console_puts("Bad SRAT TBL TYPE");
+            PANIC();
+        }
+        p += h->length;
+    }
+    console_ok();
 }
 
 void
@@ -129,6 +205,16 @@ parse_rsdt(rsdp_descr_t* rsdp)
         switch (sig) {
         case RSDT_SIG_APIC:
             kdata_get()->acpi.apic = (apic_tbl_t*)h;
+            break;
+        case RSDT_SIG_SRAT:
+            kdata_get()->acpi.srat = (srat_tbl_t*)h;
+            break;
+        case RSDT_SIG_SLIT:
+            /* BUG, we wan't to support this */
+            UNSUPPORTED();
+            break;
+        default:
+            console_putf("Unhandled RSDT_SIG 0x00000000", sig, 4, 21);
             break;
         }
     }
@@ -150,6 +236,10 @@ acpi_init()
 
     parse_rsdt(rsdp);
     kdata_t* kd = kdata_get();
+    if (kd->acpi.srat != 0) {
+        parse_srat(kd->acpi.srat);
+    }
+
     if (kd->acpi.apic != 0) {
         parse_apic(kd->acpi.apic);
     }

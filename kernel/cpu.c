@@ -15,6 +15,23 @@ static const char* CONSOLE_TAG = "CPU";
 
 uintptr_t cpu_trampoline_get_zone_stack_addr();
 
+uint32_t
+cpu_id_from_x2apic_id(uint32_t x2apic_id)
+{
+    console_putd(x2apic_id);
+    UNSUPPORTED();
+    return 0;
+}
+
+uint32_t
+cpu_id_from_apic_id(uint32_t apic_id)
+{
+    if (__unlikely(kdata_get()->cpu.have_x2apic)) {
+        return cpu_id_from_x2apic_id(apic_id);
+    }
+    return apic_id;
+}
+
 static cpu_zone_t*
 alloc_cpu_zone()
 {
@@ -43,7 +60,7 @@ write_console_cpu_info(const kdata_t* kdata, int i)
     char* sindex = "XXXX ";
     string_hexify(sindex, i, 2, 0);
     console_write(sindex, 5);
-    console_putq(kdata->cpu.status[i]);
+    console_putq(kdata->cpu.info[i].status);
 }
 
 static void
@@ -63,7 +80,7 @@ check_bsp_sanity()
     }
 }
 
-static int
+static void
 remap_lapic(cpu_zone_t* zone)
 {
     console_start("Remapping local apic register");
@@ -78,9 +95,9 @@ remap_lapic(cpu_zone_t* zone)
         console_puts("Bad APIC ID");
         PANIC();
     }
-    kdata->cpu.zone[apic_id] = (uintptr_t)zone;
+    uint32_t cpu_id              = cpu_id_from_apic_id(apic_id);
+    kdata->cpu.info[cpu_id].zone = (uintptr_t)zone;
     console_ok();
-    return apic_cpu_is_bsp(apic_base);
 }
 
 /*
@@ -96,20 +113,27 @@ cpu_trampoline()
         PANIC();
     }
     console_start("Trampoline");
-    console_write("ZONE: ", 6);
-    console_putq((uintptr_t)zone);
 
-    int is_bsp = remap_lapic(zone);
-    console_write("BSP: ", 5);
-    console_putb(is_bsp);
+    uintptr_t apic_base = apic_get_base_msr();
+    const int is_bsp    = apic_cpu_is_bsp(apic_base);
+    if (!is_bsp) {
+        /* The bsp lapic is already remapped */
+        remap_lapic(zone);
+    }
 
     uint32_t apic_id = cpu_zone_get_apic_id(zone);
-    console_write("APIC_ID: ", 9);
-    console_putd(apic_id);
+    uint32_t cpu_id  = cpu_id_from_apic_id(apic_id);
 
-    kdata_t* kdata = kdata_get();
+    console_putf("ZONE         = 0x0000000000000000", (uintptr_t)zone, 8, 17);
+    console_putf("APIC_BASE    = 0x0000000000000000", apic_base, 8, 17);
+    console_putf("APIC_ID      = 0x00000000", apic_id, 4, 17);
+    console_putf("CPU_ID       = 0x00000000", cpu_id, 4, 17);
+    console_putf("IS_BSP       = 0x00", is_bsp, 1, 17);
+    console_putf(
+        "INFO         = 0x0000000000000000", (uintptr_t)zone->info, 8, 17);
+
     if (is_bsp) {
-        kdata->cpu.status[apic_id] |= CPU_STAT_BSP;
+        kdata_get()->cpu.info[cpu_id].status |= CPU_STAT_BSP;
     }
 
     enable_local_apic_timer(zone);
@@ -119,7 +143,20 @@ cpu_trampoline()
 }
 
 static void
-fixup_stack(cpu_zone_t* zone)
+rewrite_stack(cpu_zone_t* zone)
+{
+    /* Finish fixing up the stack */
+    /* The second stack entry points to the first, this prepares for pop rbp */
+    *((uintptr_t*)&zone->stack[CPU_STACK_SIZE - 2 * 8]) =
+        (uintptr_t)&zone->stack[CPU_STACK_SIZE - 1 * 8];
+
+    /* The first will get exectuted when we return from main */
+    *((uintptr_t*)&zone->stack[CPU_STACK_SIZE - 1 * 8]) =
+        (uintptr_t)cpu_trampoline;
+}
+
+static void
+move_stack(cpu_zone_t* zone)
 {
     /* This is a little unsafe... Any pushed RBP's wont' be modified to hit
      * the new addresses. But this is why we are doing it early, and it
@@ -129,17 +166,38 @@ fixup_stack(cpu_zone_t* zone)
     cpu_move_stack((uintptr_t)&zone->stack[CPU_STACK_SIZE - 1],
                    (uintptr_t)&kernel_stack_paddr);
     console_ok();
+}
 
-    console_start("Rewriting stack");
-    /* Finish fixing up the stack */
-    /* The second stack entry points to the first */
-    *((uintptr_t*)&zone->stack[CPU_STACK_SIZE - 2 * 8]) =
-        (uintptr_t)&zone->stack[CPU_STACK_SIZE - 1 * 8];
+static void
+alloc_cpu_zones()
+{
+    console_start("Allocating CPU zones");
 
-    /* The first will get exectuted when we return from main */
-    *((uintptr_t*)&zone->stack[CPU_STACK_SIZE - 1 * 8]) =
-        (uintptr_t)cpu_trampoline;
-
+    /* So, we are definitely running on the bsp here, but we don't know the
+     * apic_id until we remap the apic base msr. So, we will try remapping
+     * here as we allocate to check to see.
+     */
+    kdata_t* kd   = kdata_get();
+    int found_bsp = 0;
+    for (uint8_t i = 0; i < kd->cpu.num_cpus; ++i) {
+        cpu_zone_t* zone = alloc_cpu_zone();
+        if (zone == 0) {
+            console_puts("Can't alloc!");
+            PANIC();
+        }
+        if (!found_bsp) {
+            uintptr_t apic_base = (uintptr_t)&zone->lapic_reg;
+            apic_set_base_msr(apic_base);
+            uint32_t apic_id = cpu_zone_get_apic_id(zone);
+            if (apic_id == kd->cpu.info[i].apic_id) {
+                found_bsp = 1;
+                move_stack(zone);
+            }
+        }
+        zone->info = &kd->cpu.info[i];
+        /*  */
+        rewrite_stack(zone);
+    }
     console_ok();
 }
 
@@ -148,17 +206,7 @@ cpu_bsp_init()
 {
     console_start("Initializing the BSP");
     check_bsp_sanity();
-
     memory_percpu_init();
-
-    console_start("Allocating a zone for the BSP");
-    cpu_zone_t* zone = alloc_cpu_zone();
-    if (zone == 0) {
-        console_puts("Can't alloc!");
-        PANIC();
-    } else {
-        console_ok();
-        fixup_stack(zone);
-    }
+    alloc_cpu_zones();
     console_ok();
 }

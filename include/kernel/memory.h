@@ -5,6 +5,10 @@
 #include <nubbin/kernel/intrinsics.h>
 #include <nubbin/kernel/types.h>
 
+#ifndef MAX_NUMA_DOMAINS
+#define MAX_NUMA_DOMAINS 4
+#endif
+
 extern size_t kernel_vaddr_off;
 extern size_t bios_mmap;
 extern size_t page_table_paddr;
@@ -126,6 +130,7 @@ struct mem_info {
     uint32_t size;
     struct mem_info_entry entries[];
 } __attribute__((packed));
+typedef struct mem_info mem_info_t;
 
 #define EBDA_ADDR \
     (size_t)(((*((uint16_t*)(0x40E))) << 4))  // *16 because it's a RM address
@@ -149,6 +154,21 @@ enum {
     PTE_DRTY = (1 << 6),
     PTE_HUGE = (1 << 7)
 };
+
+struct memory_kdata_domain {
+    uint32_t id;
+    uint32_t domain;
+    uint64_t base;
+    uint64_t length;
+    uint32_t flags;
+} __aligned;
+typedef struct memory_kdata_domain memory_kdata_domain_t;
+
+struct memory_kdata {
+    mem_info_t* bios_mem_info;
+    memory_kdata_domain_t domains[MAX_NUMA_DOMAINS];
+} __packed;
+typedef struct memory_kdata memory_kdata_t;
 
 void memory_print_bios_mmap();
 

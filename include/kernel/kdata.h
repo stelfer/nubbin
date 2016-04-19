@@ -13,12 +13,14 @@ extern size_t kdata_size;
 
 #include <nubbin/kernel/acpi.h>
 #include <nubbin/kernel/cpu.h>
+#include <nubbin/kernel/memory.h>
 
 /* The kernel data structure held at 0x200000 */
 struct kdata {
     uint32_t magic;
     acpi_kdata_t acpi;
     cpu_kdata_t cpu;
+    memory_kdata_t memory;
 } __packed;
 typedef struct kdata kdata_t;
 STATIC_ASSERT(sizeof(kdata_t) <= KDATA_SIZE);
