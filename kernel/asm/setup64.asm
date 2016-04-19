@@ -2,7 +2,7 @@
 	
 global start64
 
-extern main
+extern bsp_init
 extern kernel_stack_paddr
 extern serial_init
 extern idt_init
@@ -16,6 +16,6 @@ start64:
 
 	call idt_init
 
-	mov rax, main
+	mov rax, bsp_init
 	call rax
-	jmp $
+	jmp $			; Sanity placeholder: this will be overwritten during init

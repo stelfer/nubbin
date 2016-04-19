@@ -32,7 +32,7 @@ struct cpu_zone {
 } __packed;
 typedef struct cpu_zone cpu_zone_t;
 
-void cpu_init();
+void cpu_bsp_init();
 
 void cpu_spin_here();
 

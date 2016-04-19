@@ -13,6 +13,14 @@ extern uintptr_t kernel_stack_paddr;
 
 static const char* CONSOLE_TAG = "CPU";
 
+void
+cpu_trampoline()
+{
+    console_start("Trampoline");
+    for (;;)
+        ;
+}
+
 static cpu_zone_t*
 alloc_cpu_zone()
 {
@@ -75,8 +83,42 @@ check_bsp_sanity()
     }
 }
 
-static void
-bsp_init()
+void
+cpu_zone_init(cpu_zone_t* zone)
+{
+    console_ok();
+    console_start("Remapping local apic register");
+    apic_set_base_msr((uintptr_t)&zone->lapic_reg);
+    update_kdata_from_local_reg_map(&zone->lapic_reg);
+    enable_local_apic_timer(&zone->lapic_reg);
+    console_ok();
+
+    /* This is a little unsafe... Any pushed RBP's wont' be modified to hit
+     * the new addresses. But this is why we are doing it early, and it
+     * won't matter anyway since we are going to replace the old values here
+     * with the trampoline anyway */
+    console_start("Moving stack");
+    cpu_move_stack((uintptr_t)&zone->stack[CPU_STACK_SIZE - 1],
+                   (uintptr_t)&kernel_stack_paddr);
+    console_ok();
+
+    /* Finish fixing up the stack */
+
+    console_putq(*(uintptr_t*)&zone->stack[CPU_STACK_SIZE - 2 * 8]);
+
+    /* The second stack entry points to the first */
+    *((uintptr_t*)&zone->stack[CPU_STACK_SIZE - 2 * 8]) =
+        (uintptr_t)&zone->stack[CPU_STACK_SIZE - 1 * 8];
+
+    /* The first will get exectuted when we return from main */
+    *((uintptr_t*)&zone->stack[CPU_STACK_SIZE - 1 * 8]) =
+        (uintptr_t)cpu_trampoline;
+
+    console_putq(*(uintptr_t*)&zone->stack[CPU_STACK_SIZE - 2 * 8]);
+}
+
+void
+cpu_bsp_init()
 {
     console_start("Initializing the BSP");
     check_bsp_sanity();
@@ -89,19 +131,7 @@ bsp_init()
         console_puts("Can't alloc!");
         PANIC();
     } else {
-        console_ok();
-        console_start("Remapping local apic register");
-        apic_set_base_msr((uintptr_t)&zone->lapic_reg);
-        update_kdata_from_local_reg_map(&zone->lapic_reg);
-        enable_local_apic_timer(&zone->lapic_reg);
-        console_ok();
-
-        /* This is a little unsafe... Any pushed RBP's wont' be modified to hit
-         * the new addresses. But this is why we are doing it early */
-        console_start("Moving stack");
-        cpu_move_stack((uintptr_t)&zone->stack[CPU_STACK_SIZE - 1],
-                       (uintptr_t)&kernel_stack_paddr);
-        console_ok();
+        cpu_zone_init(zone);
     }
     console_ok();
 }
@@ -109,7 +139,4 @@ bsp_init()
 void
 cpu_init()
 {
-    acpi_init();
-
-    bsp_init();
 }

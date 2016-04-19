@@ -13,7 +13,7 @@ QEMU_IMAGE_ARGS		:= $(QEMU_DEBUG) $(QEMU_SERIAL) $(QEMU_NOGRAPHIC) -m 1G
 QEMU_KERNEL_ARGS	:= -kernel
 
 KERNEL_OBJS 		:= 					\
-			build/nubbin/kernel/kernel.ko		\
+			build/nubbin/kernel/bsp_init.ko		\
 			build/nubbin/kernel/io.ko 		\
 			build/nubbin/kernel/asm/boot.o		\
 			build/nubbin/kernel/asm/setup16.o	\
