@@ -6,8 +6,6 @@
 
 enum { LOCAL_APIC_SIVR_VEC = 0xf };
 
-uint64_t apic_get_base_msr();
-
 // #define APIC_CPU_IS_BSP(AB)
 
 #define LOCAL_REG_MAP(name) \
@@ -136,5 +134,7 @@ void apic_set_base_msr(uintptr_t addr);
 void apic_set_eoi();
 
 void apic_spurious_isr();
+
+uint64_t apic_get_base_msr();
 
 #endif /* _APIC_H */

@@ -37,16 +37,16 @@ struct rsdt {
 } __packed;
 typedef struct rsdt rsdt_t;
 
-struct apic_tbl {
+struct madt_tbl {
     acpi_tbl_hdr_t hdr;
     uint32_t lca;
     uint32_t flags;
     unsigned char strct[];
 } __packed;
-typedef struct apic_tbl apic_tbl_t;
+typedef struct madt_tbl madt_tbl_t;
 
 static inline size_t
-apic_tbl_size(apic_tbl_t* apic)
+madt_tbl_size(madt_tbl_t* apic)
 {
     return (apic->hdr.len - sizeof(apic->hdr) - sizeof(apic->lca) -
             sizeof(apic->flags));
@@ -108,59 +108,59 @@ typedef struct srat_tbl_common_entry srat_tbl_common_entry_t;
 
 enum { SRAT_LAPIC_AFFNTY = 0, SRAT_MEM_AFFNTY = 1, SRAT_LAPIC_X2_AFFNTY = 2 };
 
-struct apic_tbl_entry_hdr {
+struct madt_tbl_entry_hdr {
     unsigned char type;
     unsigned char len;
 } __packed;
-typedef struct apic_tbl_entry_hdr apic_tbl_entry_hdr_t;
+typedef struct madt_tbl_entry_hdr madt_tbl_entry_hdr_t;
 
 typedef unsigned char apic_id_t;
 typedef unsigned char acpi_proc_id_t;
 
-struct apic_local_apic {
-    apic_tbl_entry_hdr_t hdr;
+struct madt_lapic {
+    madt_tbl_entry_hdr_t hdr;
     acpi_proc_id_t acpi_proc_id;
     apic_id_t apic_id;
     uint32_t flags;
 } __packed;
-typedef struct apic_local_apic apic_local_apic_t;
+typedef struct madt_lapic madt_lapic_t;
 
-enum { ACPI_LOCAL_APIC_ENABLED = 1 };
+enum { MADT_LAPIC_ENABLED = 1 };
 
-struct apic_io_apic {
-    apic_tbl_entry_hdr_t hdr;
-    unsigned char io_apic_id;
+struct madt_ioapic {
+    madt_tbl_entry_hdr_t hdr;
+    unsigned char id;
     unsigned char reserved;
-    uint32_t io_apic_addr;
+    uint32_t addr;
     uint32_t gsi_base;
 } __packed;
-typedef struct apic_io_apic apic_io_apic_t;
+typedef struct madt_ioapic madt_ioapic_t;
 
-struct apic_iso {
-    apic_tbl_entry_hdr_t hdr;
+struct madt_iso {
+    madt_tbl_entry_hdr_t hdr;
     unsigned char bus_src;
     unsigned char irq_src;
     uint32_t gsi;
     uint16_t flags;
 } __packed;
-typedef struct apic_iso apic_iso_t;
+typedef struct madt_iso madt_iso_t;
 
 typedef enum {
-    MADT_LOCAL_APIC,
-    MADT_IO_APIC,
+    MADT_LAPIC,
+    MADT_IOAPIC,
     MADT_INT_SRC_OVR,
     MADT_NMI_SRC,
-    MADT_LOCAL_APIC_NMI,
-    MADT_LOCAL_APIC_ADDR_OVR,
+    MADT_LAPIC_NMI,
+    MADT_LAPIC_ADDR_OVR,
     MADT_IO_SAPIC,
     MADT_LOCAL_SAPIC,
     MADT_PLAT_INTR_SRCS,
     MADT_X2APIC_NMI
-} madt_apic_type_t;
+} madt_type_t;
 
 struct acpi_kdata {
     rsdt_t* rsdt;
-    apic_tbl_t* apic;
+    madt_tbl_t* madt;
     srat_tbl_t* srat;
 } __packed;
 typedef struct acpi_kdata acpi_kdata_t;
@@ -168,7 +168,7 @@ typedef struct acpi_kdata acpi_kdata_t;
 void acpi_init();
 
 /* hex(reduce(lambda x,y: (x << 8) + y, map(lambda x: ord(x), "HPET")[::-1])) */
-#define RSDT_SIG_APIC 0x43495041
+#define RSDT_SIG_MADT 0x43495041
 #define RSDT_SIG_SSDT 0x54445353
 #define RSDT_SIG_HPET 0x54455048
 #define RSDT_SIG_FACP 0x50434146

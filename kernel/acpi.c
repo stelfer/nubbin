@@ -78,9 +78,9 @@ find_tbl(rsdp_descr_t* rsdp, const char* name)
 }
 
 void
-parse_madt_local_apic(apic_local_apic_t* h)
+parse_madt_lapic(madt_lapic_t* h)
 {
-    console_start("Parsing MADT entry");
+    console_start("Parsing MADT LAPIC entry");
 
     uint32_t cpu_id = cpu_id_from_apic_id(h->apic_id);
     kdata_t* kd     = kdata_get();
@@ -100,21 +100,44 @@ parse_madt_local_apic(apic_local_apic_t* h)
 }
 
 void
-parse_apic(apic_tbl_t* apic)
+parse_madt_ioapic(madt_ioapic_t* h)
 {
-    console_start("Parsring MADT");
-    const size_t esize = apic_tbl_size(apic);
-    const uint8_t* p   = &apic->strct[0];
+    console_start("Parsing MADT IOAPIC entry");
+
+    if (h->id > IOAPIC_MAX_IOAPICS) {
+        console_puts("IOAPIC_MAX_IOAPICS exceeded");
+        PANIC();
+    }
+
+    kdata_t* kd                        = kdata_get();
+    kd->ioapic.entries[h->id].id       = h->id;
+    kd->ioapic.entries[h->id].addr     = h->addr;
+    kd->ioapic.entries[h->id].gsi_base = h->gsi_base;
+
+    console_putf("IOAPIC_ID    = 0x00", h->id, 1, 17);
+    console_putf("ADDR         = 0x00000000", h->addr, 4, 17);
+    console_putf("GSIB         = 0x00000000", h->gsi_base, 4, 17);
+    console_ok();
+}
+
+void
+parse_madt(madt_tbl_t* tbl)
+{
+    console_start("Parsing MADT");
+    const size_t esize = madt_tbl_size(tbl);
+    const uint8_t* p   = &tbl->strct[0];
     const uint8_t* end = p + esize;
     while (p != end) {
-        const apic_tbl_entry_hdr_t* h = (apic_tbl_entry_hdr_t*)p;
+        const madt_tbl_entry_hdr_t* h = (madt_tbl_entry_hdr_t*)p;
         switch (h->type) {
-        case MADT_LOCAL_APIC:
-            parse_madt_local_apic((apic_local_apic_t*)h);
+        case MADT_LAPIC:
+            parse_madt_lapic((madt_lapic_t*)h);
             break;
-        case MADT_IO_APIC:
+        case MADT_IOAPIC:
+            parse_madt_ioapic((madt_ioapic_t*)h);
+            break;
         case MADT_INT_SRC_OVR:
-        case MADT_LOCAL_APIC_NMI:
+        case MADT_LAPIC_NMI:
             break;
         default:
             console_puts("UNHANDLED MADT TYPE");
@@ -203,8 +226,8 @@ parse_rsdt(rsdp_descr_t* rsdp)
         acpi_tbl_hdr_t* h = (acpi_tbl_hdr_t*)addr;
         uint32_t sig      = *((uint32_t*)h->sig);
         switch (sig) {
-        case RSDT_SIG_APIC:
-            kdata_get()->acpi.apic = (apic_tbl_t*)h;
+        case RSDT_SIG_MADT:
+            kdata_get()->acpi.madt = (madt_tbl_t*)h;
             break;
         case RSDT_SIG_SRAT:
             kdata_get()->acpi.srat = (srat_tbl_t*)h;
@@ -240,8 +263,8 @@ acpi_init()
         parse_srat(kd->acpi.srat);
     }
 
-    if (kd->acpi.apic != 0) {
-        parse_apic(kd->acpi.apic);
+    if (kd->acpi.madt != 0) {
+        parse_madt(kd->acpi.madt);
     }
     console_ok();
 }
