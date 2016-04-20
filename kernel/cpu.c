@@ -39,18 +39,24 @@ alloc_cpu_zone()
         memory_percpu_alloc_phy(PERCPU_TYPE_ZONE, sizeof(cpu_zone_t)));
 }
 
+void interrupt_write_gate(uint8_t id, uintptr_t gate, uint8_t type);
+extern void isr_timer();
+
 static void
 enable_local_apic_timer(cpu_zone_t* zone)
 {
     console_start("Enabling local apic timer");
 
-    apic_local_reg_map_t* map = &zone->lapic_reg;
-    /* Enable the spurious interrupt vector */
-    uint32_t sivr = map->off_00f0.dw0;
-    sivr |= 0x0000010f | (LOCAL_APIC_SIVR_VEC << 4);
-    map->off_00f0.dw0 = sivr;
+    apic_local_reg_map_t* reg = &zone->lapic_reg;
 
-    /* __asm__("int $32\n"); */
+    /* Enable the spurious interrupt vector */
+    uint32_t sivr =
+        APIC_REG_SPURIOUS(reg) | 0x0000010f | (LOCAL_APIC_SIVR_VEC << 4);
+    APIC_REG_SPURIOUS(reg) = sivr;
+
+    interrupt_write_gate(32, (uintptr_t)isr_timer, 0);
+
+    __asm__("int $32\n");
     console_ok();
 }
 

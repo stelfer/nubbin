@@ -3,7 +3,8 @@ global interrupt_write_gate
 	
 extern idt_paddr
 extern serial_puts
-
+extern isr_default
+	
 IDT_PRESENT 		equ (1 << 15)
 IDT_DPL_RING0 		equ (0 << 13)
 IDT_DPL_RING1 		equ (1 << 13)
@@ -15,15 +16,6 @@ IDT_TYPE_TRAP_GATE 	equ (0xf << 8)
 	
 bits 64
 section .setup
-
-default_handler:
-	push rdi
-	mov rdi, INTR_MSG
-	mov rax, serial_puts
-	call rax
-	pop rdi
-	jmp $
-	iretq
 
 ;;; In: RDI -> descriptor index, RSI-> obj, DX-> TYPE
 interrupt_write_gate:
@@ -49,7 +41,7 @@ idt_init:
 	lea edi, [idt_paddr]
 	rep stosd
 
-	mov rsi, default_handler
+	mov rsi, isr_default
 	xor rdx, rdx
 	mov dx, IDT_PRESENT | IDT_TYPE_INTR_GATE
 	xor rdi, rdi
@@ -63,10 +55,11 @@ idt_init:
 	ret
 
 
+
+	
 align 8
 idtr64:
 	dw (256*16)-1
 	dq idt_paddr
-	
-INTR_MSG db "DEFAULT HANDLER", 0
+
 	

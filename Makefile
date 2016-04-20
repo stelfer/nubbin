@@ -30,6 +30,7 @@ KERNEL_OBJS 		:= 					\
 			build/nubbin/kernel/asm/setup64.o	\
 			build/nubbin/kernel/asm/task.ko		\
 			build/nubbin/kernel/asm/cpu.ko		\
+			build/nubbin/kernel/asm/isr.ko		\
 			build/nubbin/kernel/asm/apic.ko		\
 			build/nubbin/kernel/console.ko		\
 			build/nubbin/kernel/string.ko		\

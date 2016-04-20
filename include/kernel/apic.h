@@ -12,10 +12,10 @@ uint64_t apic_get_base_msr();
 
 #define LOCAL_REG_MAP(name) \
     struct {                \
-        uint32_t dw0;            \
-        uint32_t dw1;            \
-        uint32_t dw2;            \
-        uint32_t dw3;            \
+        uint32_t dw0;       \
+        uint32_t dw1;       \
+        uint32_t dw2;       \
+        uint32_t dw3;       \
     } name
 struct apic_local_reg_map {
     LOCAL_REG_MAP(off_0000);
@@ -85,6 +85,25 @@ struct apic_local_reg_map {
 };
 #undef LOCAL_REG_MAP
 typedef struct apic_local_reg_map apic_local_reg_map_t;
+
+#define APIC_REG_APIC_ID(r) (r)->off_0020.dw0
+#define APIC_REG_APIC_VER(r) (r)->off_0030.dw0
+#define APIC_REG_TASKPRIO(r) (r)->off_0080.dw0
+#define APIC_REG_EOI(r) (r)->off_00b0.dw0
+#define APIC_REG_LDR(r) (r)->off_00d0.dw0
+#define APIC_REG_DFR(r) (r)->off_00e0.dw0
+#define APIC_REG_SPURIOUS(r) (r)->off_00f0.dw0
+#define APIC_REG_ESR(r) (r)->off_0280.dw0
+#define APIC_REG_ICRL(r) (r)->off_0300.dw0
+#define APIC_REG_ICRH(r) (r)->off_0310.dw0
+#define APIC_REG_LVT_TMR(r) (r)->off_0320.dw0
+#define APIC_REG_LVT_PERF(r) (r)->off_0340.dw0
+#define APIC_REG_LVT_LINT0(r) (r)->off_0350.dw0
+#define APIC_REG_LVT_LINT1(r) (r)->off_0360.dw0
+#define APIC_REG_LVT_ERR(r) (r)->off_0370.dw0
+#define APIC_REG_TMRINITCNT(r) (r)->off_0380.dw0
+#define APIC_REG_TMRCURRCNT(r) (r)->off_0390.dw0
+#define APIC_REG_TMRDIV(r) (r)->off_03f0.dw0
 
 static inline uint8_t
 apic_cpu_is_bsp(uintptr_t apic_base)
