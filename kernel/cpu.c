@@ -5,6 +5,7 @@
 #include <nubbin/kernel/apic.h>
 #include <nubbin/kernel/console.h>
 #include <nubbin/kernel/cpu.h>
+#include <nubbin/kernel/interrupt.h>
 #include <nubbin/kernel/kdata.h>
 #include <nubbin/kernel/memory.h>
 #include <nubbin/kernel/string.h>
@@ -39,9 +40,6 @@ alloc_cpu_zone()
         memory_percpu_alloc_phy(PERCPU_TYPE_ZONE, sizeof(cpu_zone_t)));
 }
 
-void interrupt_write_gate(uint8_t id, uintptr_t gate, uint8_t type);
-extern void isr_timer();
-
 static void
 enable_local_apic_timer(cpu_zone_t* zone)
 {
@@ -54,7 +52,8 @@ enable_local_apic_timer(cpu_zone_t* zone)
         APIC_REG_SPURIOUS(reg) | 0x0000010f | (LOCAL_APIC_SIVR_VEC << 4);
     APIC_REG_SPURIOUS(reg) = sivr;
 
-    interrupt_write_gate(32, (uintptr_t)isr_timer, 0);
+    /* interrupt_write_gate( */
+    /*     32, (uintptr_t)isr_timer, IDT_PRESENT | IDT_TYPE_INTR_GATE); */
 
     __asm__("int $32\n");
     console_ok();

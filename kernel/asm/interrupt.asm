@@ -3,8 +3,8 @@ global interrupt_write_gate
 	
 extern idt_paddr
 extern serial_puts
-extern isr_default
-	
+extern isr_trap
+
 IDT_PRESENT 		equ (1 << 15)
 IDT_DPL_RING0 		equ (0 << 13)
 IDT_DPL_RING1 		equ (1 << 13)
@@ -41,7 +41,7 @@ idt_init:
 	lea edi, [idt_paddr]
 	rep stosd
 
-	mov rsi, isr_default
+	mov rsi, isr_trap
 	xor rdx, rdx
 	mov dx, IDT_PRESENT | IDT_TYPE_INTR_GATE
 	xor rdi, rdi

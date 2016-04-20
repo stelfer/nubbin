@@ -1,34 +1,41 @@
 
-global isr_default
-global isr_timer
+global isr_trap
+global isr
+global isr_abort
+global isr_fault_code
+global isr_fault	
 	
-extern serial_puts
-	
+extern interrupt_trap
+extern interrupt
+extern interrupt_abort
+extern interrupt_fault_code
+extern interrupt_fault	
+
 bits 64
 section .text
 
-
-isr_default:
-	;; push rdi
-	;; mov rdi, INTR_MSG
-	;; mov rax, serial_puts
-	;; call rax
-	;; pop rdi
-	jmp $
+isr_trap:
+	mov rdi, rsp
+	call interrupt_trap
 	iretq
 
-
-isr_timer:
-	;; push rdi
-	;; mov rdi, TIMER_MSG
-	;; mov rax, serial_puts
-	;; call rax
-	;; pop rdi
-	jmp $
+isr_interrupt:
+	mov rdi, rsp
+	call interrupt
 	iretq
-	
-	
-INTR_MSG db "DEFAULT HANDLER", 0
 
-TIMER_MSG db "TIMER", 0
-	
+isr_abort:
+	mov rdi, rsp
+	call interrupt_abort
+	iretq
+
+isr_fault_code:
+	pop rsi
+	mov rdi, rsp
+	call interrupt_fault_code
+	iretq
+
+isr_fault:
+	mov rdi, rsp
+	call interrupt_abort
+	iretq
