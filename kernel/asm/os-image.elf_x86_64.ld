@@ -15,7 +15,8 @@ percpu_paddr	   = 0x00202000;
 percpu_tbl_paddr   = 0x00202000;
 gdt_paddr 	   = 0x00203000;
 page_table_paddr   = 0x00400000;
-user_paddr	   = 0x00600000;
+page_table_size	   = 0x00200000;
+user_paddr	   = page_table_paddr + page_table_size;
 
 cpu_stack_size     = 0x400;
 

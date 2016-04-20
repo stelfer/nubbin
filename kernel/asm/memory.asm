@@ -9,7 +9,8 @@ global gdt32.data
 global gdt32.descriptor
 
 extern page_table_paddr
-
+extern page_table_size
+	
 CR0_WP 		equ (1 << 16)	;
 CR0_PG 		equ (1 << 31)	;
 CR4_PSE 	equ (1 << 4)	;
@@ -45,43 +46,63 @@ GDT_DATA	equ 16
 GDT_DESCR	equ 24
 	
 ;;; See struct memory_page_tables in memory.h
-PML4 		equ page_table_paddr
-PML4_HOFF 	equ PML4 + 511 * 8
-USER_PDP 	equ PML4 + 0x1000
-KERN_PDP 	equ USER_PDP + 0x1000
-KERN_PDP_HOFF 	equ KERN_PDP + 508 * 8
-MMAP_PDP	equ KERN_PDP + 0x1000	
-USER_PDS   	equ MMAP_PDP + 0x1000 
 
+MEMORY_VMEM_PML4 	equ 0
+MEMORY_VMEM_LOWER_PDP 	equ 1
+MEMORY_VMEM_LOWER_PD 	equ 2
+MEMORY_VMEM_LOWER_PT0 	equ 3
+MEMORY_VMEM_LOWER_PT1 	equ 4
+MEMORY_VMEM_LOWER_PT2 	equ 5
+MEMORY_VMEM_UPPER_PDP 	equ 6
+MEMORY_VMEM_UPPER_PD 	equ 7
+MEMORY_VMEM_UPPER_PT0 	equ 8
+MEMORY_VMEM_UPPER_PT1 	equ 9
+MEMORY_VMEM_UPPER_PT2 	equ 10
+
+PML4 		equ page_table_paddr +  0x1000 * MEMORY_VMEM_PML4
+LOWER_PDP 	equ page_table_paddr +  0x1000 * MEMORY_VMEM_LOWER_PDP
+LOWER_PD 	equ page_table_paddr +  0x1000 * MEMORY_VMEM_LOWER_PD
+LOWER_PT0 	equ page_table_paddr +  0x1000 * MEMORY_VMEM_LOWER_PT0
+LOWER_PT1 	equ page_table_paddr +  0x1000 * MEMORY_VMEM_LOWER_PT1
+LOWER_PT2 	equ page_table_paddr +  0x1000 * MEMORY_VMEM_LOWER_PT2
+UPPER_PDP 	equ page_table_paddr +  0x1000 * MEMORY_VMEM_UPPER_PDP
+UPPER_PD 	equ page_table_paddr +  0x1000 * MEMORY_VMEM_UPPER_PD
+UPPER_PT0 	equ page_table_paddr +  0x1000 * MEMORY_VMEM_UPPER_PT0
+UPPER_PT1 	equ page_table_paddr +  0x1000 * MEMORY_VMEM_UPPER_PT1
+UPPER_PT2 	equ page_table_paddr +  0x1000 * MEMORY_VMEM_UPPER_PT2
+
+LOWER_PML4_OFF	equ PML4 + 0 * 8
+LOWER_PDP_OFF	equ LOWER_PDP + 0 * 8
+	
+UPPER_PML4_OFF 	equ PML4 + 511 * 8
+UPPER_PDP_OFF 	equ UPPER_PDP + 508 * 8
+	
 bits 32
 section .setup
 memory_map_init_early:	
 	;; Zero the tables
+	cld
 	mov ax, 0
-	mov ecx, 0x400
-	lea edi, [PML4]
+	mov ecx, page_table_size
+	lea edi, [page_table_paddr]
 	rep stosd
-	lea edi, [USER_PDP]
-	rep stosd
-	lea edi, [KERN_PDP]
-	rep stosd
-	lea edi, [USER_PDS]
-	rep stosd
-
-	lea eax, [USER_PDS]
-	or eax, 0b11
-	mov [USER_PDP], eax
-	mov [KERN_PDP_HOFF], eax	; 
 	
-	lea eax, [USER_PDP]
+	;; Set up the pds
+	lea eax, [LOWER_PD]
 	or eax, 0b11
-	mov [PML4], eax
+	mov [LOWER_PDP_OFF], eax
 
-	lea eax, [KERN_PDP]
+	lea eax, [UPPER_PD]
 	or eax, 0b11
-	;; Also map Canonical (negative) higher half to same 1G segment
-	mov [PML4_HOFF], eax
+	mov [UPPER_PDP_OFF], eax
+	
+	lea eax, [LOWER_PDP]
+	or eax, 0b11
+	mov [LOWER_PML4_OFF], eax
 
+	lea eax, [UPPER_PDP]
+	or eax, 0b11
+	mov [UPPER_PML4_OFF], eax
 	
 	mov ecx, 0
 .loop:
@@ -89,7 +110,8 @@ memory_map_init_early:
 	mov eax, 0x200000  ; 2MiB
 	mul ecx            ; start address of ecx-th page
 	or eax, 0b10000011 ; present + writable + huge
-	mov [USER_PDS + ecx*8], eax ; map ecx-th entry
+	mov [LOWER_PD + ecx*8], eax ; map ecx-th entry
+	mov [UPPER_PD + ecx*8], eax ; map ecx-th entry
 
 	inc ecx
 	cmp ecx, 512

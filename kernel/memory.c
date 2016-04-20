@@ -1,8 +1,8 @@
 /* Copyright (C) 2016 by Soren Telfer - MIT License. See LICENSE.txt */
 
-#include <nubbin/kernel/memory.h>
-#include <nubbin/kernel/console.h>
 #include <nubbin/kernel.h>
+#include <nubbin/kernel/console.h>
+#include <nubbin/kernel/memory.h>
 #include <nubbin/kernel/stddef.h>
 
 const char* CONSOLE_TAG = "MEM";
@@ -43,38 +43,46 @@ memory_print_bios_mmap()
 }
 
 static void
-check_early_mappings(memory_page_tables_t* mpt)
+check_early_range(memory_page_tables_t* mpt,
+                  uintptr_t pml4_off,
+                  uintptr_t pdp_selector,
+                  uintptr_t pdp_off,
+                  uintptr_t pd_selector)
 {
-    console_start("Checking early memory maps");
-    /* memory_map_init_early() did what we expected */
-    /* The user mpl entries should map to lower values, also the are marked with
-     * present and accessed (probably), so we compare
-     */
-    if ((mpt->pml4[0] | 0x20) != ((uintptr_t)&mpt->user_pdps[0] | 0x23)) {
+    if ((mpt->blks[MEMORY_VMEM_PML4][pml4_off] | 0x20) !=
+        ((uintptr_t)&mpt->blks[pdp_selector][0] | 0x23)) {
         PANIC();
     }
-    if ((mpt->user_pdps[0][0] | 0x20) != ((uintptr_t)&mpt->user_pds[0] | 0x23)) {
+    if ((mpt->blks[pdp_selector][pdp_off] | 0x20) !=
+        ((uintptr_t)&mpt->blks[pd_selector][0] | 0x23)) {
         PANIC();
     }
+
     for (unsigned i = 0; i < 512; ++i) {
         /* Blast off the low status bytes */
-        if ((mpt->user_pds[0][i] & 0xffffffffffffff00) != (i * 0x200000)) {
+        if ((mpt->blks[pd_selector][i] & 0xffffffffffffff00) !=
+            (i * 0x200000)) {
             PANIC();
         }
     }
+}
 
-    uintptr_t kern_base = (uintptr_t)0xffffffff00000000;
+static void
+check_early_mappings(memory_page_tables_t* mpt)
+{
+    console_start("Checking early memory maps");
+    console_start("Checking lower maps");
+    check_early_range(mpt, 0, MEMORY_VMEM_LOWER_PDP, 0, MEMORY_VMEM_LOWER_PD);
+    console_ok();
+
+    console_start("Checking upper maps");
+    uintptr_t kern_base      = (uintptr_t)0xffffffff00000000;
     const uintptr_t pml4_off = memory_get_pml4_off(kern_base);
-    if ((mpt->pml4[pml4_off] | 0x20) != ((uintptr_t)&mpt->kern_pdps[0] | 0x23)) {
-        PANIC();
-    }
-    /* The 508 pdps map the same linear range as the user 0 pdps, so they
-     * use the same pds */
-    const uintptr_t pdp_off = memory_get_pdp_off(kern_base);
-    if ((mpt->kern_pdps[0][pdp_off] | 0x20) !=
-        ((uintptr_t)&mpt->user_pds[0] | 0x23)) {
-        PANIC();
-    }
+    const uintptr_t pdp_off  = memory_get_pdp_off(kern_base);
+    check_early_range(
+        mpt, pml4_off, MEMORY_VMEM_UPPER_PDP, pdp_off, MEMORY_VMEM_UPPER_PD);
+    console_ok();
+
     console_ok();
 }
 
@@ -96,7 +104,7 @@ memory_percpu_init()
     mio->entries[0].state    = PERCPU_STATE_VALID;
     mio->entries[0].type     = PERCPU_TYPE_GDT;
     mio->entries[0].base     = (uintptr_t)&gdt_paddr;
-    mio->size                = sizeof(memory_percpu_tbl_t) + mio->entries[0].size;
+    mio->size = sizeof(memory_percpu_tbl_t) + mio->entries[0].size;
 }
 
 uintptr_t

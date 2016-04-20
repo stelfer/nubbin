@@ -19,35 +19,33 @@ extern size_t gdt_paddr;
 #define KERNEL_SYM_VADDR(x) KERNEL_VADDR(&(x))
 #define KERNEL_SYM_PADDR(x) ((uintptr_t) & (x))
 
-// Our page tables sit on a single physical 2MiB page residing at
-// page_table_paddr.  We set aside 1 4k block for the PML4, one
-// for a PDP to handle the lower half, one PDP for the upper half,
-// one PDP for system percpu mapping, then the rest for PDs.  The top four
-// PDs are reserved for the the kernel to do auxilliary mappings (percpu, etc).
-
-typedef uint64_t memory_vmem_blk_t[512];
-
-enum {
-    MEMORY_NUM_USER_PDPS = 1,
-    MEMORY_NUM_KERN_PDPS = 1,
-    MEMORY_NUM_MMAP_PDPS = 1,
-    MEMORY_NUM_KERN_PDS  = 4,
-    MEMORY_NUM_USER_PDS  = 512 - 1 - MEMORY_NUM_USER_PDPS -
-                          MEMORY_NUM_KERN_PDPS -
-                          MEMORY_NUM_MMAP_PDPS -
-                          MEMORY_NUM_KERN_PDS
-};
+typedef uintptr_t memory_vmem_blk_t[512];
 
 struct memory_page_tables {
-    memory_vmem_blk_t pml4;
-    memory_vmem_blk_t user_pdps[MEMORY_NUM_USER_PDPS];
-    memory_vmem_blk_t kern_pdps[MEMORY_NUM_KERN_PDPS];
-    memory_vmem_blk_t mmap_pdps[MEMORY_NUM_MMAP_PDPS];
-    memory_vmem_blk_t user_pds[MEMORY_NUM_USER_PDS];
-    memory_vmem_blk_t kern_pds[MEMORY_NUM_KERN_PDS];
+    memory_vmem_blk_t blks[512];
 } __packed;
 typedef struct memory_page_tables memory_page_tables_t;
 STATIC_ASSERT(sizeof(memory_page_tables_t) == 0x200000);
+
+/*
+ * The first MEMORY_VMEM_DYNAMIC blocks are used for the initial 6MiB mapping.
+ * The rest of the memory is demand-mapped using the 512-MEMORY_VMEM_DYNAMIC
+ * pages
+ */
+enum {
+    MEMORY_VMEM_PML4,
+    MEMORY_VMEM_LOWER_PDP,
+    MEMORY_VMEM_LOWER_PD,
+    MEMORY_VMEM_LOWER_PT0,
+    MEMORY_VMEM_LOWER_PT1,
+    MEMORY_VMEM_LOWER_PT2,
+    MEMORY_VMEM_UPPER_PDP,
+    MEMORY_VMEM_UPPER_PD,
+    MEMORY_VMEM_UPPER_PT0,
+    MEMORY_VMEM_UPPER_PT1,
+    MEMORY_VMEM_UPPER_PT2,
+    MEMORY_VMEM_DYNAMIC
+};
 
 enum { KERN_PDP_USER = 0, KERN_PDP_PERCPU = 1 };
 
