@@ -2,6 +2,7 @@ bits 32
 
 global ata_do_st_read
 global ata_do_st_softrst	
+global ata_isr
 	
 ERR_BIT  equ 00000001b
 DRQ_BIT  equ 00001000b
@@ -126,4 +127,4 @@ ata_do_st_read:
 	pop edx
 	popf
 	ret
-	
+

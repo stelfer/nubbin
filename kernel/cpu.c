@@ -40,65 +40,34 @@ alloc_cpu_zone()
         memory_percpu_alloc_phy(PERCPU_TYPE_ZONE, sizeof(cpu_zone_t)));
 }
 
-void isr_int020h();
-void isr_int027h();
-
 void
 cpu_isr_apic_timer(uint8_t irq, interrupt_frame_t* frame)
 {
-    console_puts("HERE!");
-    HALT();
+    volatile uint64_t reg = apic_get_base_msr() & ~0xfff;
+    APIC_REG_EOI(reg)     = 0;
 }
 
-void cpu_enable_apic();
-
-uint32_t cpu_has_apic();
-
-/* uint32_t */
-/* cpuHasAPIC() */
-/* { */
-/*     uint32_t eax, edx; */
-/*     eax                    = 0x1; */
-/*     uint32_t CPU_FLAG_APIC = 0x200; */
-/*     asm volatile("cpuid" : "=d"(edx) : "a"(eax)); */
-/*     return edx & CPU_FLAG_APIC; */
-/* } */
+void apic_enable_timer();
 
 static void
-enable_local_apic_timer(cpu_zone_t* zone)
+enable_local_apic(volatile cpu_zone_t* zone)
 {
-    console_start("Enabling local apic timer");
+    console_start("Enabling LAPIC");
+    volatile uintptr_t reg   = zone->lapic_reg;
+    APIC_REG_SPURIOUS(reg)   = 39 | APIC_SW_ENABLE;
+    APIC_REG_LDR(reg)        = (APIC_REG_LDR(reg) & 0x0ffffff) | 1;
+    APIC_REG_LVT_TMR(reg)    = APIC_DISABLE;
+    APIC_REG_LVT_PERF(reg)   = APIC_NMI;
+    APIC_REG_LVT_LINT0(reg)  = APIC_DISABLE;
+    APIC_REG_LVT_LINT1(reg)  = APIC_DISABLE;
+    APIC_REG_DFR(reg)        = 0xffffffff;
+    APIC_REG_TASKPRIO(reg)   = 0;
+    APIC_REG_TMRDIV(reg)     = 0x03;
+    APIC_REG_LVT_TMR(reg)    = 32 | APIC_TMR_PERIODIC;
+    APIC_REG_TMRINITCNT(reg) = 0x1000000;
 
-    apic_local_reg_map_t* reg = &zone->lapic_reg;
+    apic_enable();
 
-    /* Enable the spurious interrupt vector */
-    interrupt_write_gate(
-        32, (uintptr_t)isr_int020h, IDT_PRESENT | IDT_TYPE_INTR_GATE);
-
-    interrupt_write_gate(
-        37, (uintptr_t)isr_int027h, IDT_PRESENT | IDT_TYPE_INTR_GATE);
-
-    uint32_t sivr =
-        APIC_REG_SPURIOUS(reg) | 0x0000010f | (LOCAL_APIC_SIVR_VEC << 4);
-    APIC_REG_SPURIOUS(reg) = sivr;
-
-    APIC_REG_DFR(reg)       = 0xffffffff;
-    APIC_REG_LDR(reg)       = (APIC_REG_LDR(reg) & 0x0ffffff) | 1;
-    APIC_REG_LVT_TMR(reg)   = APIC_DISABLE;
-    APIC_REG_LVT_PERF(reg)  = APIC_NMI;
-    APIC_REG_LVT_LINT0(reg) = APIC_DISABLE;
-    APIC_REG_LVT_LINT1(reg) = APIC_DISABLE;
-    APIC_REG_TASKPRIO(reg)  = 0;
-
-    cpu_enable_apic();
-
-    APIC_REG_SPURIOUS(reg) = 39 + APIC_SW_ENABLE;
-    APIC_REG_LVT_TMR(reg)  = 32 + APIC_SW_ENABLE;
-    APIC_REG_TMRDIV(reg)   = 0x03;
-
-    console_putd(APIC_REG_SPURIOUS(reg));
-
-    __asm__("int $1\n");
     console_ok();
 }
 
@@ -128,26 +97,6 @@ check_bsp_sanity()
     }
 }
 
-static void
-remap_lapic(cpu_zone_t* zone)
-{
-    console_start("Remapping local apic register");
-
-    uintptr_t apic_base = (uintptr_t)&zone->lapic_reg;
-    apic_set_base_msr(apic_base);
-    apic_base = apic_get_base_msr();
-
-    kdata_t* kdata   = kdata_get();
-    uint32_t apic_id = cpu_zone_get_apic_id(zone);
-    if (apic_id > kdata->cpu.num_cpus) {
-        console_puts("Bad APIC ID");
-        PANIC();
-    }
-    uint32_t cpu_id              = cpu_id_from_apic_id(apic_id);
-    kdata->cpu.info[cpu_id].zone = (uintptr_t)zone;
-    console_ok();
-}
-
 /*
  * Main entry-point for every cpu
  */
@@ -166,10 +115,10 @@ cpu_trampoline()
     const int is_bsp    = apic_cpu_is_bsp(apic_base);
     if (!is_bsp) {
         /* The bsp lapic is already remapped */
-        remap_lapic(zone);
+        /* remap_lapic(zone); */
     }
 
-    uint32_t apic_id = cpu_zone_get_apic_id(zone);
+    uint32_t apic_id = APIC_REG_APIC_ID(zone->lapic_reg);
     uint32_t cpu_id  = cpu_id_from_apic_id(apic_id);
 
     console_putf("ZONE         = 0x0000000000000000", (uintptr_t)zone, 8, 17);
@@ -184,10 +133,11 @@ cpu_trampoline()
         kdata_get()->cpu.info[cpu_id].status |= CPU_STAT_BSP;
     }
 
-    enable_local_apic_timer(zone);
+    enable_local_apic(zone);
 
-    for (;;)
-        ;
+    for (;;) {
+        HALT();
+    }
 }
 
 static void
@@ -235,13 +185,16 @@ alloc_cpu_zones()
             console_puts("Can't alloc!");
             PANIC();
         }
-        uintptr_t apic_base = (uintptr_t)&zone->lapic_reg;
-        /* The apic_base needs to have UC semantics see 3a.1 10.4.1 */
-        memory_set_uc(apic_base);
-
         if (!found_bsp) {
-            apic_set_base_msr(apic_base);
-            uint32_t apic_id = cpu_zone_get_apic_id(zone);
+            /* apic_set_base_msr(apic_base); */
+            volatile uintptr_t reg = apic_get_base_msr() & ~0xfff;
+            if (reg == 0) {
+                console_puts("Got NULL apic base");
+                PANIC();
+            }
+            zone->lapic_reg = reg;
+            enable_local_apic(zone);
+            uint32_t apic_id = APIC_REG_APIC_ID(reg);
             if (apic_id == kd->cpu.info[i].apic_id) {
                 found_bsp = 1;
                 move_stack(zone);

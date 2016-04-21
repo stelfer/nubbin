@@ -28,6 +28,7 @@ interrupt_abort(uint8_t e, interrupt_frame_t* frame)
 void
 interrupt_fault_code(uint8_t e, interrupt_frame_t* frame, uint64_t code)
 {
+    console_putf("E            = 0x0000000000000000", e, 8, 17);
     console_putf("CODE         = 0x0000000000000000", code, 8, 17);
     console_putf("SS           = 0x0000000000000000", frame->ss, 8, 17);
     console_putf("RSP          = 0x0000000000000000", frame->sp, 8, 17);

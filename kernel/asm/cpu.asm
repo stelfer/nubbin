@@ -44,6 +44,12 @@ cpu_enable_apic:
 	rdmsr
 	bts eax, 11
 	wrmsr
+	sti
+
+	.loop:
+	hlt
+	jmp .loop
+	
 	ret
 
 global cpu_has_apic
@@ -56,9 +62,24 @@ cpu_has_apic:
 	pop rbx
 	ret
 
+global cpu_apic_enabled
+cpu_apic_enabled:
+	mov ecx, 1bh
+	rdmsr
+	and eax, 0800h
+	ret
+
+global cpu_apic_base
+cpu_apic_base:
+	mov ecx, 1bh
+	rdmsr
+	and eax, 0fffff000h
+	ret
+	
 cpu_trampoline_get_zone_stack_addr:
 	;; cpu_trampoline() will push rsp, mov rbp, rsp on entry, so we use that to find the
 	;; top of the stack
 	mov rax, rbp
 	add rax, 8
 	ret
+

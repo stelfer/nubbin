@@ -79,6 +79,9 @@ idt_init:
 	install_gate 014h
 	install_gate 01eh
 
+	install_gate 020h
+	install_gate 076h
+	
 	mov rax, idt_paddr
 	push rax
 	mov ax, word (256*16)-1

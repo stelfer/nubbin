@@ -85,32 +85,34 @@ struct apic_local_reg_map {
 typedef struct apic_local_reg_map apic_local_reg_map_t;
 
 enum {
-    APIC_DISABLE   = 0x10000,
-    APIC_SW_ENABLE = 0x100,
-    APIC_CPUFOCUS  = 0x200,
-    APIC_NMI       = (4 << 8),
-    TMR_PERIODIC   = 0x20000,
-    TMR_BASEDIV    = (1 << 20)
+    APIC_DISABLE      = 0x10000,
+    APIC_SW_ENABLE    = 0x100,
+    APIC_CPUFOCUS     = 0x200,
+    APIC_NMI          = (4 << 8),
+    APIC_TMR_PERIODIC = 0x20000,
+    APIC_TMR_BASEDIV  = (1 << 20)
 };
 
-#define APIC_REG_APIC_ID(r) (r)->off_0020.dw0
-#define APIC_REG_APIC_VER(r) (r)->off_0030.dw0
-#define APIC_REG_TASKPRIO(r) (r)->off_0080.dw0
-#define APIC_REG_EOI(r) (r)->off_00b0.dw0
-#define APIC_REG_LDR(r) (r)->off_00d0.dw0
-#define APIC_REG_DFR(r) (r)->off_00e0.dw0
-#define APIC_REG_SPURIOUS(r) (r)->off_00f0.dw0
-#define APIC_REG_ESR(r) (r)->off_0280.dw0
-#define APIC_REG_ICRL(r) (r)->off_0300.dw0
-#define APIC_REG_ICRH(r) (r)->off_0310.dw0
-#define APIC_REG_LVT_TMR(r) (r)->off_0320.dw0
-#define APIC_REG_LVT_PERF(r) (r)->off_0340.dw0
-#define APIC_REG_LVT_LINT0(r) (r)->off_0350.dw0
-#define APIC_REG_LVT_LINT1(r) (r)->off_0360.dw0
-#define APIC_REG_LVT_ERR(r) (r)->off_0370.dw0
-#define APIC_REG_TMRINITCNT(r) (r)->off_0380.dw0
-#define APIC_REG_TMRCURRCNT(r) (r)->off_0390.dw0
-#define APIC_REG_TMRDIV(r) (r)->off_03f0.dw0
+#define APIC_REG(r) ((apic_local_reg_map_t*)(r))
+
+#define APIC_REG_APIC_ID(r) APIC_REG(r)->off_0020.dw0
+#define APIC_REG_APIC_VER(r) APIC_REG(r)->off_0030.dw0
+#define APIC_REG_TASKPRIO(r) APIC_REG(r)->off_0080.dw0
+#define APIC_REG_EOI(r) APIC_REG(r)->off_00b0.dw0
+#define APIC_REG_LDR(r) APIC_REG(r)->off_00d0.dw0
+#define APIC_REG_DFR(r) APIC_REG(r)->off_00e0.dw0
+#define APIC_REG_SPURIOUS(r) APIC_REG(r)->off_00f0.dw0
+#define APIC_REG_ESR(r) APIC_REG(r)->off_0280.dw0
+#define APIC_REG_ICRL(r) APIC_REG(r)->off_0300.dw0
+#define APIC_REG_ICRH(r) APIC_REG(r)->off_0310.dw0
+#define APIC_REG_LVT_TMR(r) APIC_REG(r)->off_0320.dw0
+#define APIC_REG_LVT_PERF(r) APIC_REG(r)->off_0340.dw0
+#define APIC_REG_LVT_LINT0(r) APIC_REG(r)->off_0350.dw0
+#define APIC_REG_LVT_LINT1(r) APIC_REG(r)->off_0360.dw0
+#define APIC_REG_LVT_ERR(r) APIC_REG(r)->off_0370.dw0
+#define APIC_REG_TMRINITCNT(r) APIC_REG(r)->off_0380.dw0
+#define APIC_REG_TMRCURRCNT(r) APIC_REG(r)->off_0390.dw0
+#define APIC_REG_TMRDIV(r) APIC_REG(r)->off_03e0.dw0
 
 static inline uint8_t
 apic_cpu_is_bsp(uintptr_t apic_base)
@@ -145,5 +147,7 @@ void apic_set_eoi();
 void apic_spurious_isr();
 
 uint64_t apic_get_base_msr();
+
+void apic_enable();
 
 #endif /* _APIC_H */

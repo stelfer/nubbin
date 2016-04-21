@@ -59,6 +59,16 @@ isr_int%1:
 	iretq
 %endmacro
 
+%macro irq_default_isr 1
+global isr_int%1
+isr_int%1:
+	mov al, 0x20
+	out 0x20, al
+	out 0xa0, al
+	iretq
+%endmacro
+
+	
 %macro spurious_fault 1
 global isr_int%1
 isr_int%1:
@@ -176,7 +186,7 @@ fault		072h, interrupt_irq
 fault		073h, interrupt_irq
 fault		074h, interrupt_irq
 fault		075h, interrupt_irq
-fault		076h, interrupt_irq
+irq_default_isr	076h
 fault		077h, interrupt_irq
 fault		078h, interrupt_irq
 fault		079h, interrupt_irq

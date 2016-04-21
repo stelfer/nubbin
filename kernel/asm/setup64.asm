@@ -13,7 +13,7 @@ section .setup
 start64:
 
 	call idt_init
-
+	
 	mov rax, bsp_init
 	call rax
 	jmp $			; Sanity placeholder: this will be overwritten during init
