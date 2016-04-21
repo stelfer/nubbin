@@ -5,6 +5,8 @@ extern idt_paddr
 extern serial_puts
 extern isr_trap
 
+extern isr_pf
+	
 IDT_PRESENT 		equ (1 << 15)
 IDT_DPL_RING0 		equ (0 << 13)
 IDT_DPL_RING1 		equ (1 << 13)
@@ -51,6 +53,13 @@ idt_init:
 	cmp rdi, 256
 	jne .loop
 .done:
+
+	mov rsi, isr_pf
+	xor rdx, rdx
+	mov dx, IDT_PRESENT | IDT_TYPE_INTR_GATE
+	mov rdi, 0xe
+	call interrupt_write_gate
+	
 	lidt [idtr64]
 	ret
 

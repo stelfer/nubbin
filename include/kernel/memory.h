@@ -19,6 +19,8 @@ extern size_t gdt_paddr;
 #define KERNEL_SYM_VADDR(x) KERNEL_VADDR(&(x))
 #define KERNEL_SYM_PADDR(x) ((uintptr_t) & (x))
 
+enum { MEMORY_VMEM_PAGE_SIZE = 0x200000 };
+
 typedef uintptr_t memory_vmem_blk_t[512];
 
 struct memory_page_tables {
@@ -44,8 +46,35 @@ enum {
     MEMORY_VMEM_UPPER_PT0,
     MEMORY_VMEM_UPPER_PT1,
     MEMORY_VMEM_UPPER_PT2,
-    MEMORY_VMEM_DYNAMIC
+    MEMORY_VMEM_PD1
 };
+
+static inline int
+memory_vmem_check_blk(uintptr_t pdp)
+{
+    if (pdp == 0) {
+        return 1;
+    }
+    return (pdp + MEMORY_VMEM_PD1 - 1) < 512;
+}
+
+static inline uintptr_t
+memory_vmem_get_lower_blk(uintptr_t pdp)
+{
+    if (pdp == 0) {
+        return MEMORY_VMEM_LOWER_PD;
+    }
+    return pdp + MEMORY_VMEM_PD1 - 1;
+}
+
+static inline uintptr_t
+memory_vmem_get_upper_blk(uintptr_t pdp)
+{
+    if (pdp == 0) {
+        return MEMORY_VMEM_UPPER_PD;
+    }
+    return pdp + MEMORY_VMEM_PD1 - 1;
+}
 
 enum { KERN_PDP_USER = 0, KERN_PDP_PERCPU = 1 };
 
@@ -181,5 +210,11 @@ void memory_flush_tlb();
 void memory_percpu_init();
 
 uintptr_t memory_percpu_alloc_phy(percpu_type_t type, percpu_size_t size);
+
+static inline uintptr_t
+memory_get_page_addr(uintptr_t addr)
+{
+    return (addr >> 25) << 25;
+}
 
 #endif /* _MEMORY_H */

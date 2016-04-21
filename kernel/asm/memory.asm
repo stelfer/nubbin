@@ -3,6 +3,9 @@
 global memory_map_init_early
 global memory_enable_ia32e
 global memory_flush_tlb	
+global memory_vmem_lock_acq
+global memory_vmem_lock_rel	
+
 global gdt32
 global gdt32.code
 global gdt32.data
@@ -103,8 +106,58 @@ memory_map_init_early:
 	lea eax, [UPPER_PDP]
 	or eax, 0b11
 	mov [UPPER_PML4_OFF], eax
+
+	;; The first three PDS point to PT0-2 which are 4k maps
+	;; Build the PTs
+	xor ecx, ecx
+.pt_loop:
+	mov eax, 0x1000
+	mul ecx
+	or eax, 0b11
+	mov [LOWER_PT0 + ecx*8], eax
+	mov [UPPER_PT0 + ecx*8], eax
 	
-	mov ecx, 0
+	add eax, 0x200000
+	mov [LOWER_PT1 + ecx*8], eax
+	mov [UPPER_PT1 + ecx*8], eax
+
+	add eax, 0x200000
+	mov [LOWER_PT2 + ecx*8], eax
+	mov [UPPER_PT2 + ecx*8], eax
+
+	inc ecx
+	cmp ecx, 512
+	jne .pt_loop
+
+	;; Now point the lower three PDS to the PTS
+	lea eax, [LOWER_PT0]
+	or eax, 0b11
+	mov [LOWER_PD], eax
+
+	lea eax, [LOWER_PT1]
+	or eax, 0b11
+	mov [LOWER_PD + 8], eax
+
+	lea eax, [LOWER_PT2]
+	or eax, 0b11
+	mov [LOWER_PD + 16], eax
+	
+	lea eax, [UPPER_PT0]
+	or eax, 0b11
+	mov [UPPER_PD], eax
+
+	lea eax, [UPPER_PT1]
+	or eax, 0b11
+	mov [UPPER_PD + 8], eax
+
+	lea eax, [UPPER_PT2]
+	or eax, 0b11
+	mov [UPPER_PD + 16], eax
+
+	ret
+	jmp $
+	
+	mov ecx, 3
 .loop:
 	;; map ecx-th PDP entry to a huge page that starts at address 2MiB*ecx
 	mov eax, 0x200000  ; 2MiB
@@ -196,4 +249,10 @@ gdt64:
 .descriptor:        
         dw gdt64.descriptor - gdt64 - 1
         dd gdt64
+	
+
+;; section .text
+;; bits 64
+;; memory_map_region:
+	
 	

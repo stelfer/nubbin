@@ -2,6 +2,8 @@
 
 #include <nubbin/kernel.h>
 #include <nubbin/kernel/console.h>
+#include <nubbin/kernel/interrupt.h>
+#include <nubbin/kernel/kdata.h>
 #include <nubbin/kernel/memory.h>
 #include <nubbin/kernel/stddef.h>
 
@@ -47,7 +49,8 @@ check_early_range(memory_page_tables_t* mpt,
                   uintptr_t pml4_off,
                   uintptr_t pdp_selector,
                   uintptr_t pdp_off,
-                  uintptr_t pd_selector)
+                  uintptr_t pd_selector,
+                  uintptr_t pt_selector)
 {
     if ((mpt->blks[MEMORY_VMEM_PML4][pml4_off] | 0x20) !=
         ((uintptr_t)&mpt->blks[pdp_selector][0] | 0x23)) {
@@ -57,11 +60,30 @@ check_early_range(memory_page_tables_t* mpt,
         ((uintptr_t)&mpt->blks[pd_selector][0] | 0x23)) {
         PANIC();
     }
-
+    if ((mpt->blks[pd_selector][0] | 0x20) !=
+        ((uintptr_t)&mpt->blks[pt_selector][0] | 0x23)) {
+        PANIC();
+    }
+    if ((mpt->blks[pd_selector][1] | 0x20) !=
+        ((uintptr_t)&mpt->blks[pt_selector + 1][0] | 0x23)) {
+        PANIC();
+    }
+    if ((mpt->blks[pd_selector][2] | 0x20) !=
+        ((uintptr_t)&mpt->blks[pt_selector + 2][0] | 0x23)) {
+        PANIC();
+    }
     for (unsigned i = 0; i < 512; ++i) {
         /* Blast off the low status bytes */
-        if ((mpt->blks[pd_selector][i] & 0xffffffffffffff00) !=
-            (i * 0x200000)) {
+        uintptr_t mapped_addr = mpt->blks[pt_selector][i] & 0xffffffffffffff00;
+        uintptr_t paddr       = i * 0x1000;
+        int ok                = mapped_addr == paddr;
+        mapped_addr = mpt->blks[pt_selector + 1][i] & 0xffffffffffffff00;
+        paddr += 0x200000;
+        ok &= mapped_addr == paddr;
+        mapped_addr = mpt->blks[pt_selector + 2][i] & 0xffffffffffffff00;
+        paddr += 0x200000;
+        ok &= mapped_addr == paddr;
+        if (!ok) {
             PANIC();
         }
     }
@@ -72,15 +94,24 @@ check_early_mappings(memory_page_tables_t* mpt)
 {
     console_start("Checking early memory maps");
     console_start("Checking lower maps");
-    check_early_range(mpt, 0, MEMORY_VMEM_LOWER_PDP, 0, MEMORY_VMEM_LOWER_PD);
+    check_early_range(mpt,
+                      0,
+                      MEMORY_VMEM_LOWER_PDP,
+                      0,
+                      MEMORY_VMEM_LOWER_PD,
+                      MEMORY_VMEM_LOWER_PT0);
     console_ok();
 
     console_start("Checking upper maps");
     uintptr_t kern_base      = (uintptr_t)0xffffffff00000000;
     const uintptr_t pml4_off = memory_get_pml4_off(kern_base);
     const uintptr_t pdp_off  = memory_get_pdp_off(kern_base);
-    check_early_range(
-        mpt, pml4_off, MEMORY_VMEM_UPPER_PDP, pdp_off, MEMORY_VMEM_UPPER_PD);
+    check_early_range(mpt,
+                      pml4_off,
+                      MEMORY_VMEM_UPPER_PDP,
+                      pdp_off,
+                      MEMORY_VMEM_UPPER_PD,
+                      MEMORY_VMEM_UPPER_PT0);
     console_ok();
 
     console_ok();
@@ -126,4 +157,66 @@ memory_percpu_alloc_phy(percpu_type_t type, percpu_size_t size)
     mio->num_entries           = mio->num_entries + 1;
 
     return base;
+}
+
+static void
+map_not_present_page(uintptr_t addr,
+                     uintptr_t mask,
+                     uintptr_t pd_sel,
+                     uintptr_t pdp_sel)
+{
+    uintptr_t pml4_off  = memory_get_pml4_off(addr | mask);
+    uintptr_t pdp_off   = memory_get_pdp_off(addr | mask);
+    uintptr_t pd_off    = memory_get_pd_off(addr | mask);
+    uintptr_t blk       = pdp_off == 0 ? pd_sel : pdp_off + MEMORY_VMEM_PD1 - 1;
+    uintptr_t page_addr = addr - memory_get_off(addr | mask);
+
+    console_putf("BLK          = 0x0000000000000000", blk, 8, 17);
+    console_putf("PML4_OFF     = 0x0000000000000000", pml4_off, 8, 17);
+    console_putf("PDP_OFF      = 0x0000000000000000", pdp_off, 8, 17);
+    console_putf("PD_OFF       = 0x0000000000000000", pd_off, 8, 17);
+    console_putf("PAGE_PHY_ADD = 0x0000000000000000", page_addr, 8, 17);
+
+    /* memory_get_page_addr(addr); */
+    memory_page_tables_t* mpt = get_mpt();
+    mpt->blks[blk][pd_off]    = page_addr | PTE_PRES | PTE_RDWR | PTE_HUGE;
+
+    /* Update the pdp and pml4 if necessary */
+    if ((mpt->blks[pdp_sel][pdp_off] & ~0xfff) != (uintptr_t)&mpt->blks[blk]) {
+        mpt->blks[pdp_sel][pdp_off] =
+            (uintptr_t)&mpt->blks[blk][pd_off] | PD_PRES | PD_RDWR;
+    }
+
+    if ((mpt->blks[MEMORY_VMEM_PML4][pml4_off] & 0xfff) !=
+        (uintptr_t)&mpt->blks[pdp_sel][pdp_off]) {
+        mpt->blks[MEMORY_VMEM_PML4][pml4_off] =
+            (uintptr_t)&mpt->blks[pdp_sel][pdp_off] | PD_PRES | PD_RDWR;
+    }
+}
+
+void
+memory_isr_pf(interrupt_frame_t* frame, uintptr_t code, uintptr_t addr)
+{
+    console_putf("SS           = 0x0000000000000000", frame->ss, 8, 17);
+    console_putf("RSP          = 0x0000000000000000", frame->sp, 8, 17);
+    console_putf("FLAGS        = 0x0000000000000000", frame->flags, 8, 17);
+    console_putf("CS           = 0x0000000000000000", frame->cs, 8, 17);
+    console_putf("RIP          = 0x0000000000000000", frame->ip, 8, 17);
+    console_putf("CODE         = 0x0000000000000000", code, 8, 17);
+    console_putf("ADDR         = 0x0000000000000000", addr, 8, 17);
+
+    if (code == 0) {
+        map_not_present_page(
+            addr, 0, MEMORY_VMEM_LOWER_PD, MEMORY_VMEM_LOWER_PDP);
+        if (addr < 0xffffffff00000000) {
+            map_not_present_page(addr,
+                                 0xffffffff00000000,
+                                 MEMORY_VMEM_UPPER_PD,
+                                 MEMORY_VMEM_UPPER_PDP);
+        }
+    }
+
+    console_puts("HERE!");
+
+    /* HALT(); */
 }
