@@ -11,8 +11,6 @@ extern cpu_init
 bits 64
 section .setup
 start64:
-	mov rsp, kernel_stack_paddr
-	mov rbp, rsp
 
 	call idt_init
 
