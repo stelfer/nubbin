@@ -11,7 +11,7 @@ QEMU_SMP		:= -smp sockets=2,cores=2,threads=2
 QEMU_MACHINE		:= $(QEMU_CPU) $(QEMU_NUMA) $(QEMU_SMP)
 QEMU_NOGRAPHIC		:= -nographic
 # QEMU_DEBUG		:= -s -S
-QEMU_SERIAL		:= -serial mon:stdio --no-reboot -d int #int,exec,cpu,mmu,pcall,guest_errors
+QEMU_SERIAL		:= -serial mon:stdio --no-reboot #-d int #int,exec,cpu,mmu,pcall,guest_errors
 QEMU_IMAGE_ARGS		:= $(QEMU_MACHINE) $(QEMU_DEBUG) $(QEMU_SERIAL) $(QEMU_NOGRAPHIC) -m 1G
 #-boot a -fda
 QEMU_KERNEL_ARGS	:= -kernel

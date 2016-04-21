@@ -7,7 +7,7 @@
 #include <nubbin/kernel/memory.h>
 #include <nubbin/kernel/stddef.h>
 
-const char* CONSOLE_TAG = "MEM";
+CONSOLE_TAG("MEM");
 
 static inline memory_page_tables_t*
 get_mpt()
@@ -117,16 +117,8 @@ check_early_mappings(memory_page_tables_t* mpt)
     console_ok();
 }
 
-void
-memory_map_init_finish()
-{
-    memory_page_tables_t* mpt = get_mpt();
-    check_early_mappings(mpt);
-    /* Fix user space here? */
-}
-
-void
-memory_percpu_init()
+static void
+percpu_init()
 {
     /* The GDT gets pre-placed here during jump to long mode */
     memory_percpu_tbl_t* mio = get_percpu_tbl();
@@ -136,6 +128,14 @@ memory_percpu_init()
     mio->entries[0].type     = PERCPU_TYPE_GDT;
     mio->entries[0].base     = (uintptr_t)&gdt_paddr;
     mio->size = sizeof(memory_percpu_tbl_t) + mio->entries[0].size;
+}
+
+void
+memory_map_init_finish()
+{
+    memory_page_tables_t* mpt = get_mpt();
+    check_early_mappings(mpt);
+    percpu_init();
 }
 
 uintptr_t
@@ -160,63 +160,65 @@ memory_percpu_alloc_phy(percpu_type_t type, percpu_size_t size)
 }
 
 static void
-map_not_present_page(uintptr_t addr,
-                     uintptr_t mask,
-                     uintptr_t pd_sel,
-                     uintptr_t pdp_sel)
+vmem_map_not_present_page(uintptr_t addr,
+                          uintptr_t mask,
+                          uintptr_t pd_sel,
+                          uintptr_t pdp_sel)
 {
     uintptr_t pml4_off  = memory_get_pml4_off(addr | mask);
     uintptr_t pdp_off   = memory_get_pdp_off(addr | mask);
     uintptr_t pd_off    = memory_get_pd_off(addr | mask);
-    uintptr_t blk       = pdp_off == 0 ? pd_sel : pdp_off + MEMORY_VMEM_PD1 - 1;
+    uintptr_t addr_pd   = (addr & -(MEMORY_VMEM_PAGE_SIZE * 512));
+    uintptr_t pd        = addr_pd == 0 ? pd_sel : addr_pd + MEMORY_VMEM_PD1 - 1;
     uintptr_t page_addr = addr - memory_get_off(addr | mask);
-
-    console_putf("BLK          = 0x0000000000000000", blk, 8, 17);
-    console_putf("PML4_OFF     = 0x0000000000000000", pml4_off, 8, 17);
-    console_putf("PDP_OFF      = 0x0000000000000000", pdp_off, 8, 17);
-    console_putf("PD_OFF       = 0x0000000000000000", pd_off, 8, 17);
-    console_putf("PAGE_PHY_ADD = 0x0000000000000000", page_addr, 8, 17);
 
     /* memory_get_page_addr(addr); */
     memory_page_tables_t* mpt = get_mpt();
-    mpt->blks[blk][pd_off]    = page_addr | PTE_PRES | PTE_RDWR | PTE_HUGE;
+    mpt->blks[pd][pd_off]     = page_addr | PTE_PRES | PTE_RDWR | PTE_HUGE;
 
     /* Update the pdp and pml4 if necessary */
-    if ((mpt->blks[pdp_sel][pdp_off] & ~0xfff) != (uintptr_t)&mpt->blks[blk]) {
+    if (mpt->blks[pdp_sel][pdp_off] == 0) {
         mpt->blks[pdp_sel][pdp_off] =
-            (uintptr_t)&mpt->blks[blk][pd_off] | PD_PRES | PD_RDWR;
+            (uintptr_t)&mpt->blks[pd] | PD_PRES | PD_RDWR;
     }
-
-    if ((mpt->blks[MEMORY_VMEM_PML4][pml4_off] & 0xfff) !=
-        (uintptr_t)&mpt->blks[pdp_sel][pdp_off]) {
+    if (mpt->blks[MEMORY_VMEM_PML4][pml4_off] == 0) {
         mpt->blks[MEMORY_VMEM_PML4][pml4_off] =
-            (uintptr_t)&mpt->blks[pdp_sel][pdp_off] | PD_PRES | PD_RDWR;
+            (uintptr_t)&mpt->blks[pdp_sel] | PD_PRES | PD_RDWR;
     }
+}
+
+static inline void
+vmem_map_not_present_low(uintptr_t addr)
+{
+    vmem_map_not_present_page(
+        addr, 0, MEMORY_VMEM_LOWER_PD, MEMORY_VMEM_LOWER_PDP);
+}
+
+static inline void
+vmem_map_not_present_high(uintptr_t addr)
+{
+    vmem_map_not_present_page(
+        addr, 0xffffffff00000000, MEMORY_VMEM_UPPER_PD, MEMORY_VMEM_UPPER_PDP);
 }
 
 void
 memory_isr_pf(interrupt_frame_t* frame, uintptr_t code, uintptr_t addr)
 {
-    console_putf("SS           = 0x0000000000000000", frame->ss, 8, 17);
-    console_putf("RSP          = 0x0000000000000000", frame->sp, 8, 17);
-    console_putf("FLAGS        = 0x0000000000000000", frame->flags, 8, 17);
-    console_putf("CS           = 0x0000000000000000", frame->cs, 8, 17);
-    console_putf("RIP          = 0x0000000000000000", frame->ip, 8, 17);
-    console_putf("CODE         = 0x0000000000000000", code, 8, 17);
-    console_putf("ADDR         = 0x0000000000000000", addr, 8, 17);
+    /* console_putf("SS           = 0x0000000000000000", frame->ss, 8, 17); */
+    /* console_putf("RSP          = 0x0000000000000000", frame->sp, 8, 17); */
+    /* console_putf("FLAGS        = 0x0000000000000000", frame->flags, 8, 17);
+     */
+    /* console_putf("CS           = 0x0000000000000000", frame->cs, 8, 17); */
+    /* console_putf("RIP          = 0x0000000000000000", frame->ip, 8, 17); */
+    /* console_putf("CODE         = 0x0000000000000000", code, 8, 17); */
+    /* console_putf("ADDR         = 0x0000000000000000", addr, 8, 17); */
 
     if (code == 0) {
-        map_not_present_page(
-            addr, 0, MEMORY_VMEM_LOWER_PD, MEMORY_VMEM_LOWER_PDP);
+        vmem_map_not_present_low(addr);
         if (addr < 0xffffffff00000000) {
-            map_not_present_page(addr,
-                                 0xffffffff00000000,
-                                 MEMORY_VMEM_UPPER_PD,
-                                 MEMORY_VMEM_UPPER_PDP);
+            /* If the addr is < 4G, then also map into upper, even though it
+             * wasn't requested */
+            vmem_map_not_present_high(addr);
         }
     }
-
-    console_puts("HERE!");
-
-    /* HALT(); */
 }

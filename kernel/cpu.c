@@ -213,7 +213,6 @@ cpu_bsp_init()
 {
     console_start("Initializing the BSP");
     check_bsp_sanity();
-    memory_percpu_init();
     alloc_cpu_zones();
     console_ok();
 }

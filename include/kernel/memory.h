@@ -207,14 +207,12 @@ void memory_map_init_finish();
 
 void memory_flush_tlb();
 
-void memory_percpu_init();
-
 uintptr_t memory_percpu_alloc_phy(percpu_type_t type, percpu_size_t size);
 
 static inline uintptr_t
 memory_get_page_addr(uintptr_t addr)
 {
-    return (addr >> 25) << 25;
+    return addr & -0x200000;
 }
 
 #endif /* _MEMORY_H */
