@@ -2,10 +2,6 @@ global idt_init
 global interrupt_write_gate
 	
 extern idt_paddr
-extern serial_puts
-extern isr_trap
-
-extern isr_pf
 	
 IDT_PRESENT 		equ (1 << 15)
 IDT_DPL_RING0 		equ (0 << 13)
@@ -15,6 +11,24 @@ IDT_DPL_RING3 		equ (3 << 13)
 IDT_TYPE_CALL_GATE 	equ (0xc << 8)
 IDT_TYPE_INTR_GATE 	equ (0xe << 8)
 IDT_TYPE_TRAP_GATE 	equ (0xf << 8)
+
+%macro install_gate 1
+	extern isr_int%1
+	mov rsi, isr_int%1
+	xor rdx, rdx
+	mov dx, IDT_PRESENT | IDT_TYPE_INTR_GATE
+	mov rdi, %1
+	call interrupt_write_gate
+%endmacro
+
+%macro install_trap 1
+	extern isr_int%1
+	mov rsi, isr_int%1
+	xor rdx, rdx
+	mov dx, IDT_PRESENT | IDT_TYPE_TRAP_GATE
+	mov rdi, %1
+	call interrupt_write_gate
+%endmacro
 	
 bits 64
 section .setup
@@ -43,32 +57,32 @@ idt_init:
 	lea edi, [idt_paddr]
 	rep stosd
 
-	mov rsi, isr_trap
-	xor rdx, rdx
-	mov dx, IDT_PRESENT | IDT_TYPE_INTR_GATE
-	xor rdi, rdi
-.loop:
-	call interrupt_write_gate
-	add rdi, 1
-	cmp rdi, 256
-	jne .loop
-.done:
+	;; Install gates for the reserved interrupts
+	install_gate 000h
+	install_trap 001h
+	install_gate 002h
+	install_trap 003h
+	install_trap 004h
+	install_gate 005h
+	install_gate 006h
+	install_gate 007h
+	install_trap 008h
+	install_gate 00ah
+	install_gate 00bh
+	install_gate 00ch
+	install_gate 00dh
+	install_gate 00eh
+	install_gate 010h
+	install_gate 011h
+	install_trap 012h
+	install_gate 013h
+	install_gate 014h
+	install_gate 01eh
 
-	mov rsi, isr_pf
-	xor rdx, rdx
-	mov dx, IDT_PRESENT | IDT_TYPE_INTR_GATE
-	mov rdi, 0xe
-	call interrupt_write_gate
-	
-	lidt [idtr64]
+	mov rax, idt_paddr
+	push rax
+	mov ax, word (256*16)-1
+	push ax
+	lidt [rsp]
+	add rsp, 10
 	ret
-
-
-
-	
-align 8
-idtr64:
-	dw (256*16)-1
-	dq idt_paddr
-
-	
