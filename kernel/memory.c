@@ -50,27 +50,28 @@ check_early_range(memory_page_tables_t* mpt,
                   uintptr_t pdp_selector,
                   uintptr_t pdp_off,
                   uintptr_t pd_selector,
-                  uintptr_t pt_selector)
+                  uintptr_t pt_selector,
+                  uint32_t flags)
 {
-    if ((mpt->blks[MEMORY_VMEM_PML4][pml4_off] | 0x20) !=
-        ((uintptr_t)&mpt->blks[pdp_selector][0] | 0x23)) {
-        PANIC();
+    if ((mpt->blks[MEMORY_VMEM_PML4][pml4_off] | PD_ACCD) !=
+        ((uintptr_t)&mpt->blks[pdp_selector][0] | PD_ACCD | flags)) {
+        HALT();
     }
-    if ((mpt->blks[pdp_selector][pdp_off] | 0x20) !=
-        ((uintptr_t)&mpt->blks[pd_selector][0] | 0x23)) {
-        PANIC();
+    if ((mpt->blks[pdp_selector][pdp_off] | PD_ACCD) !=
+        ((uintptr_t)&mpt->blks[pd_selector][0] | PD_ACCD | flags)) {
+        HALT();
     }
-    if ((mpt->blks[pd_selector][0] | 0x20) !=
-        ((uintptr_t)&mpt->blks[pt_selector][0] | 0x23)) {
-        PANIC();
+    if ((mpt->blks[pd_selector][0] | PD_ACCD) !=
+        ((uintptr_t)&mpt->blks[pt_selector][0] | PD_ACCD | flags)) {
+        HALT();
     }
-    if ((mpt->blks[pd_selector][1] | 0x20) !=
-        ((uintptr_t)&mpt->blks[pt_selector + 1][0] | 0x23)) {
-        PANIC();
+    if ((mpt->blks[pd_selector][1] | PD_ACCD) !=
+        ((uintptr_t)&mpt->blks[pt_selector + 1][0] | PD_ACCD | flags)) {
+        HALT();
     }
-    if ((mpt->blks[pd_selector][2] | 0x20) !=
-        ((uintptr_t)&mpt->blks[pt_selector + 2][0] | 0x23)) {
-        PANIC();
+    if ((mpt->blks[pd_selector][2] | PD_ACCD) !=
+        ((uintptr_t)&mpt->blks[pt_selector + 2][0] | PD_ACCD | flags)) {
+        HALT();
     }
     for (unsigned i = 0; i < 512; ++i) {
         /* Blast off the low status bytes */
@@ -84,7 +85,7 @@ check_early_range(memory_page_tables_t* mpt,
         paddr += 0x200000;
         ok &= mapped_addr == paddr;
         if (!ok) {
-            PANIC();
+            HALT();
         }
     }
 }
@@ -99,7 +100,8 @@ check_early_mappings(memory_page_tables_t* mpt)
                       MEMORY_VMEM_LOWER_PDP,
                       0,
                       MEMORY_VMEM_LOWER_PD,
-                      MEMORY_VMEM_LOWER_PT0);
+                      MEMORY_VMEM_LOWER_PT0,
+                      PD_PRES | PD_RDWR | PD_USER);
     console_ok();
 
     console_start("Checking upper maps");
@@ -111,7 +113,8 @@ check_early_mappings(memory_page_tables_t* mpt)
                       MEMORY_VMEM_UPPER_PDP,
                       pdp_off,
                       MEMORY_VMEM_UPPER_PD,
-                      MEMORY_VMEM_UPPER_PT0);
+                      MEMORY_VMEM_UPPER_PT0,
+                      PD_PRES | PD_RDWR);
     console_ok();
 
     console_ok();

@@ -27,6 +27,10 @@ MSR_LME 	equ (1 << 8)	;
 MSR_NXE 	equ (1 << 11)	;
 EF_AC 		equ (1 << 18)	;
 
+PRES		equ (1 << 0)
+RDWR		equ (1 << 1)
+USER		equ (1 << 2)	
+	
 GDT_NULL	equ 0	
 GDT_RDWR 	equ (1 << 41)
 GDT_EXEC 	equ (1 << 43)
@@ -49,7 +53,6 @@ GDT_DATA	equ 16
 GDT_DESCR	equ 24
 	
 ;;; See struct memory_page_tables in memory.h
-
 MEMORY_VMEM_PML4 	equ 0
 MEMORY_VMEM_LOWER_PDP 	equ 1
 MEMORY_VMEM_LOWER_PD 	equ 2
@@ -79,6 +82,11 @@ LOWER_PDP_OFF	equ LOWER_PDP + 0 * 8
 	
 UPPER_PML4_OFF 	equ PML4 + 511 * 8
 UPPER_PDP_OFF 	equ UPPER_PDP + 508 * 8
+
+LOWER_PERM	equ PRES | RDWR | USER
+UPPER_PERM	equ PRES | RDWR
+	
+
 	
 bits 32
 section .setup
@@ -92,19 +100,19 @@ memory_map_init_early:
 	
 	;; Set up the pds
 	lea eax, [LOWER_PD]
-	or eax, 0b11
+	or eax, LOWER_PERM
 	mov [LOWER_PDP_OFF], eax
 
 	lea eax, [UPPER_PD]
-	or eax, 0b11
+	or eax, UPPER_PERM
 	mov [UPPER_PDP_OFF], eax
 	
 	lea eax, [LOWER_PDP]
-	or eax, 0b11
+	or eax, LOWER_PERM
 	mov [LOWER_PML4_OFF], eax
 
 	lea eax, [UPPER_PDP]
-	or eax, 0b11
+	or eax, UPPER_PERM
 	mov [UPPER_PML4_OFF], eax
 
 	;; The first three PDS point to PT0-2 which are 4k maps
@@ -113,17 +121,25 @@ memory_map_init_early:
 .pt_loop:
 	mov eax, 0x1000
 	mul ecx
-	or eax, 0b11
-	mov [LOWER_PT0 + ecx*8], eax
-	mov [UPPER_PT0 + ecx*8], eax
-	
-	add eax, 0x200000
-	mov [LOWER_PT1 + ecx*8], eax
-	mov [UPPER_PT1 + ecx*8], eax
+	mov edx, eax
+	or edx, UPPER_PERM
+	mov [UPPER_PT0 + ecx*8], edx
+	or edx, LOWER_PERM
+	mov [LOWER_PT0 + ecx*8], edx
 
 	add eax, 0x200000
-	mov [LOWER_PT2 + ecx*8], eax
-	mov [UPPER_PT2 + ecx*8], eax
+	mov edx, eax
+	or edx, UPPER_PERM
+	mov [UPPER_PT1 + ecx*8], edx
+	or edx, LOWER_PERM
+	mov [LOWER_PT1 + ecx*8], edx
+
+	add eax, 0x200000
+	mov edx, eax
+	or edx, UPPER_PERM
+	mov [UPPER_PT2 + ecx*8], edx
+	or edx, LOWER_PERM
+	mov [LOWER_PT2 + ecx*8], edx
 
 	inc ecx
 	cmp ecx, 512
@@ -131,44 +147,28 @@ memory_map_init_early:
 
 	;; Now point the lower three PDS to the PTS
 	lea eax, [LOWER_PT0]
-	or eax, 0b11
+	or eax, LOWER_PERM
 	mov [LOWER_PD], eax
 
 	lea eax, [LOWER_PT1]
-	or eax, 0b11
+	or eax, LOWER_PERM
 	mov [LOWER_PD + 8], eax
 
 	lea eax, [LOWER_PT2]
-	or eax, 0b11
+	or eax, LOWER_PERM
 	mov [LOWER_PD + 16], eax
 	
 	lea eax, [UPPER_PT0]
-	or eax, 0b11
+	or eax, UPPER_PERM
 	mov [UPPER_PD], eax
 
 	lea eax, [UPPER_PT1]
-	or eax, 0b11
+	or eax, UPPER_PERM
 	mov [UPPER_PD + 8], eax
 
 	lea eax, [UPPER_PT2]
-	or eax, 0b11
+	or eax, UPPER_PERM
 	mov [UPPER_PD + 16], eax
-
-	ret
-	jmp $
-	
-	mov ecx, 3
-.loop:
-	;; map ecx-th PDP entry to a huge page that starts at address 2MiB*ecx
-	mov eax, 0x200000  ; 2MiB
-	mul ecx            ; start address of ecx-th page
-	or eax, 0b10000011 ; present + writable + huge
-	mov [LOWER_PD + ecx*8], eax ; map ecx-th entry
-	mov [UPPER_PD + ecx*8], eax ; map ecx-th entry
-
-	inc ecx
-	cmp ecx, 512
-	jne .loop
 
 	ret
 
