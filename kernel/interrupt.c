@@ -45,6 +45,7 @@ interrupt_abort_code(uint8_t e, interrupt_frame_t* frame, uint64_t code)
 void
 interrupt_fault(uint8_t e, interrupt_frame_t* frame)
 {
+    HALT();
 }
 
 void

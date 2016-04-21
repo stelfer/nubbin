@@ -37,8 +37,24 @@ cpu_move_stack:
 cpu_get_apic_id:
 	mov eax, 0x0000000B
 	cpuid
-	
-	
+
+global cpu_enable_apic	
+cpu_enable_apic:
+	mov ecx, 1bh
+	rdmsr
+	bts eax, 11
+	wrmsr
+	ret
+
+global cpu_has_apic
+cpu_has_apic:
+	push rbx
+	mov eax, 1
+	cpuid
+	mov eax, edx
+	and eax, 0x200
+	pop rbx
+	ret
 
 cpu_trampoline_get_zone_stack_addr:
 	;; cpu_trampoline() will push rsp, mov rbp, rsp on entry, so we use that to find the

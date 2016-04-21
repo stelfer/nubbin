@@ -90,7 +90,7 @@ fault_code 	01eh, interrupt_fault_code
 
 ;;; Generate stub code for 32-255 so that we can catch the interrupt
 ;;; number if we want to use the line in the future
-fault		020h, interrupt_irq
+fault		020h, cpu_isr_apic_timer
 fault		021h, interrupt_irq
 fault		022h, interrupt_irq
 fault		023h, interrupt_irq

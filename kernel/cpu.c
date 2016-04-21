@@ -40,6 +40,30 @@ alloc_cpu_zone()
         memory_percpu_alloc_phy(PERCPU_TYPE_ZONE, sizeof(cpu_zone_t)));
 }
 
+void isr_int020h();
+void isr_int027h();
+
+void
+cpu_isr_apic_timer(uint8_t irq, interrupt_frame_t* frame)
+{
+    console_puts("HERE!");
+    HALT();
+}
+
+void cpu_enable_apic();
+
+uint32_t cpu_has_apic();
+
+/* uint32_t */
+/* cpuHasAPIC() */
+/* { */
+/*     uint32_t eax, edx; */
+/*     eax                    = 0x1; */
+/*     uint32_t CPU_FLAG_APIC = 0x200; */
+/*     asm volatile("cpuid" : "=d"(edx) : "a"(eax)); */
+/*     return edx & CPU_FLAG_APIC; */
+/* } */
+
 static void
 enable_local_apic_timer(cpu_zone_t* zone)
 {
@@ -48,14 +72,33 @@ enable_local_apic_timer(cpu_zone_t* zone)
     apic_local_reg_map_t* reg = &zone->lapic_reg;
 
     /* Enable the spurious interrupt vector */
+    interrupt_write_gate(
+        32, (uintptr_t)isr_int020h, IDT_PRESENT | IDT_TYPE_INTR_GATE);
+
+    interrupt_write_gate(
+        37, (uintptr_t)isr_int027h, IDT_PRESENT | IDT_TYPE_INTR_GATE);
+
     uint32_t sivr =
         APIC_REG_SPURIOUS(reg) | 0x0000010f | (LOCAL_APIC_SIVR_VEC << 4);
     APIC_REG_SPURIOUS(reg) = sivr;
 
-    /* interrupt_write_gate( */
-    /*     32, (uintptr_t)isr_timer, IDT_PRESENT | IDT_TYPE_INTR_GATE); */
+    APIC_REG_DFR(reg)       = 0xffffffff;
+    APIC_REG_LDR(reg)       = (APIC_REG_LDR(reg) & 0x0ffffff) | 1;
+    APIC_REG_LVT_TMR(reg)   = APIC_DISABLE;
+    APIC_REG_LVT_PERF(reg)  = APIC_NMI;
+    APIC_REG_LVT_LINT0(reg) = APIC_DISABLE;
+    APIC_REG_LVT_LINT1(reg) = APIC_DISABLE;
+    APIC_REG_TASKPRIO(reg)  = 0;
 
-    __asm__("int $32\n");
+    cpu_enable_apic();
+
+    APIC_REG_SPURIOUS(reg) = 39 + APIC_SW_ENABLE;
+    APIC_REG_LVT_TMR(reg)  = 32 + APIC_SW_ENABLE;
+    APIC_REG_TMRDIV(reg)   = 0x03;
+
+    console_putd(APIC_REG_SPURIOUS(reg));
+
+    __asm__("int $1\n");
     console_ok();
 }
 

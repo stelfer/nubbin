@@ -84,6 +84,15 @@ struct apic_local_reg_map {
 #undef LOCAL_REG_MAP
 typedef struct apic_local_reg_map apic_local_reg_map_t;
 
+enum {
+    APIC_DISABLE   = 0x10000,
+    APIC_SW_ENABLE = 0x100,
+    APIC_CPUFOCUS  = 0x200,
+    APIC_NMI       = (4 << 8),
+    TMR_PERIODIC   = 0x20000,
+    TMR_BASEDIV    = (1 << 20)
+};
+
 #define APIC_REG_APIC_ID(r) (r)->off_0020.dw0
 #define APIC_REG_APIC_VER(r) (r)->off_0030.dw0
 #define APIC_REG_TASKPRIO(r) (r)->off_0080.dw0
