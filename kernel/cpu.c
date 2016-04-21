@@ -160,6 +160,8 @@ rewrite_stack(cpu_zone_t* zone)
         (uintptr_t)cpu_trampoline;
 }
 
+extern uintptr_t boot_paddr;
+
 static void
 move_stack(cpu_zone_t* zone)
 {
@@ -169,7 +171,7 @@ move_stack(cpu_zone_t* zone)
      * with the trampoline anyway */
     console_start("Moving stack");
     cpu_move_stack((uintptr_t)&zone->stack[CPU_STACK_SIZE - 1],
-                   (uintptr_t)&kernel_stack_paddr);
+                   (uintptr_t)&boot_paddr);
     console_ok();
 }
 
