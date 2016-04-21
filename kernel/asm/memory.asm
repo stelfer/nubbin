@@ -5,7 +5,8 @@ global memory_enable_ia32e
 global memory_flush_tlb	
 global memory_vmem_lock_acq
 global memory_vmem_lock_rel	
-
+global memory_invlpg
+	
 global gdt32
 global gdt32.code
 global gdt32.data
@@ -250,9 +251,11 @@ gdt64:
         dw gdt64.descriptor - gdt64 - 1
         dd gdt64
 	
-
-;; section .text
-;; bits 64
-;; memory_map_region:
+section .setup
+bits 64
+;;; In: RDI -> the address
+memory_invlpg:
+	invlpg [rdi]
+	ret
 	
 	

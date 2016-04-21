@@ -112,7 +112,7 @@ struct memory_percpu_tbl {
 typedef struct memory_percpu_tbl memory_percpu_tbl_t;
 STATIC_ASSERT(sizeof(memory_percpu_tbl_t) == 0x1000);
 
-enum { MEMORY_PERCPU_ALLOC_ALIGNTO = 0x400 };
+enum { MEMORY_PERCPU_ALLOC_ALIGNTO = 0x1000 };
 
 static inline uintptr_t
 memory_get_off(uintptr_t virt_addr)
@@ -166,8 +166,8 @@ enum {
     PD_PRES = (1 << 0),
     PD_RDWR = (1 << 1),
     PD_USER = (1 << 2),
-    PD_WRTH = (1 << 3),
-    PD_CDSL = (1 << 4),
+    PD_PWD  = (1 << 3),
+    PD_PCD  = (1 << 4),
     PD_ACCD = (1 << 5)
 };
 
@@ -175,8 +175,8 @@ enum {
     PTE_PRES = (1 << 0),
     PTE_RDWR = (1 << 1),
     PTE_USER = (1 << 2),
-    PTE_WRTH = (1 << 3),
-    PTE_CDSL = (1 << 4),
+    PTE_PWT  = (1 << 3),
+    PTE_PCD  = (1 << 4),
     PTE_ACCD = (1 << 5),
     PTE_DRTY = (1 << 6),
     PTE_HUGE = (1 << 7)
@@ -212,7 +212,11 @@ uintptr_t memory_percpu_alloc_phy(percpu_type_t type, percpu_size_t size);
 static inline uintptr_t
 memory_get_page_addr(uintptr_t addr)
 {
-    return addr & -0x200000;
+    return addr & -MEMORY_VMEM_PAGE_SIZE;
 }
+
+void memory_invlpg(uintptr_t m);
+
+void memory_set_uc(uintptr_t m);
 
 #endif /* _MEMORY_H */

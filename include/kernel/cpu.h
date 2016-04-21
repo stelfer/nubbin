@@ -44,13 +44,16 @@ enum { CPU_STACK_SIZE = 1024 };
 
 extern uintptr_t cpu_stack_size;
 
-/* A per-cpu memory zone */
+/* A per-cpu memory zone. The apic reg is 4k aligned so that we can
+ * use page protection to give it UC semantics
+ */
 struct cpu_zone {
     uint8_t stack[CPU_STACK_SIZE];
-    apic_local_reg_map_t lapic_reg;
     cpu_kdata_info_t* info;
+    apic_local_reg_map_t lapic_reg __attribute__((aligned(0x1000)));
 } __packed;
 typedef struct cpu_zone cpu_zone_t;
+STATIC_ASSERT(sizeof(cpu_zone_t) == 0x2000);
 
 static inline uint32_t
 cpu_zone_get_apic_id(cpu_zone_t* zone)

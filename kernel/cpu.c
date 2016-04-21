@@ -192,8 +192,11 @@ alloc_cpu_zones()
             console_puts("Can't alloc!");
             PANIC();
         }
+        uintptr_t apic_base = (uintptr_t)&zone->lapic_reg;
+        /* The apic_base needs to have UC semantics see 3a.1 10.4.1 */
+        memory_set_uc(apic_base);
+
         if (!found_bsp) {
-            uintptr_t apic_base = (uintptr_t)&zone->lapic_reg;
             apic_set_base_msr(apic_base);
             uint32_t apic_id = cpu_zone_get_apic_id(zone);
             if (apic_id == kd->cpu.info[i].apic_id) {

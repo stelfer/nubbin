@@ -225,3 +225,35 @@ memory_isr_pf(interrupt_frame_t* frame, uintptr_t code, uintptr_t addr)
         }
     }
 }
+
+uintptr_t*
+memory_get_pte(uintptr_t addr)
+{
+    const uintptr_t pml4_off        = memory_get_pml4_off(addr);
+    const uintptr_t pdp_off         = memory_get_pdp_off(addr);
+    const uintptr_t pd_off          = memory_get_pd_off(addr);
+    const memory_page_tables_t* mpt = get_mpt();
+    const uintptr_t pdp_addr        = mpt->blks[MEMORY_VMEM_PML4][pml4_off];
+    const uintptr_t pd_addr = *((uintptr_t*)(pdp_addr & ~0xff) + pdp_off);
+    if (pd_addr & PTE_HUGE) {
+        return (uintptr_t*)(pdp_addr & ~0xff) + pdp_off;
+    }
+    const uintptr_t pt_addr = *((uintptr_t*)(pd_addr & ~0xff) + pd_off);
+    if (pt_addr & PTE_HUGE) {
+        return (uintptr_t*)(pd_addr & ~0xff) + pd_off;
+    }
+    /* 4k page here */
+    const uintptr_t pt_off = (addr & (0x1ff << 12)) / 0x1000;
+    return (uintptr_t*)(pt_addr & ~0xff) + pt_off;
+}
+
+void
+memory_set_uc(uintptr_t m)
+{
+    uintptr_t* pte = memory_get_pte(m);
+    if (pte == 0) {
+        PANIC();
+    }
+    *pte |= PTE_PCD;
+    memory_invlpg(m);
+}
