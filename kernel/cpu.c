@@ -175,9 +175,7 @@ alloc_cpu_zones()
             uint32_t apic_id = APIC_REG_APIC_ID(reg);
             if (apic_id == kd->cpu.info[i].apic_id) {
                 found_bsp = 1;
-                /* zone->lapic_reg = reg; */
                 move_stack(zone);
-                /* enable_local_apic(zone); */
             }
         }
         zone->info = &kd->cpu.info[i];
