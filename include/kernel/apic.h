@@ -150,4 +150,6 @@ uint64_t apic_get_base_msr();
 
 void apic_enable();
 
+void apic_timer_init(uintptr_t reg);
+
 #endif /* _APIC_H */

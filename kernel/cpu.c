@@ -40,33 +40,22 @@ alloc_cpu_zone()
         memory_percpu_alloc_phy(PERCPU_TYPE_ZONE, sizeof(cpu_zone_t)));
 }
 
-void apic_enable_timer();
-
-static void
-enable_local_apic(volatile cpu_zone_t* zone)
+static int
+lapic_init(cpu_zone_t* zone)
 {
     console_start("Enabling LAPIC");
-    volatile uintptr_t reg   = zone->lapic_reg;
-    APIC_REG_SPURIOUS(reg)   = 39 | APIC_SW_ENABLE;
-    APIC_REG_LDR(reg)        = (APIC_REG_LDR(reg) & 0x0ffffff) | 1;
-    APIC_REG_LVT_TMR(reg)    = APIC_DISABLE;
-    APIC_REG_LVT_PERF(reg)   = APIC_NMI;
-    APIC_REG_LVT_LINT0(reg)  = APIC_DISABLE;
-    APIC_REG_LVT_LINT1(reg)  = APIC_DISABLE;
-    APIC_REG_DFR(reg)        = 0xffffffff;
-    APIC_REG_TASKPRIO(reg)   = 0;
-    APIC_REG_TMRDIV(reg)     = 0x03;
-    APIC_REG_LVT_TMR(reg)    = 32 | APIC_TMR_PERIODIC;
-    APIC_REG_TMRINITCNT(reg) = 0x1000000;
 
+    volatile uintptr_t base = apic_get_base_msr();
+    zone->lapic_reg         = base & ~0xfff;
+    apic_timer_init(zone->lapic_reg);
     apic_enable();
-    console_putf("REG_PTR      = 0x0000000000000000",
-                 (uintptr_t)&zone->lapic_reg,
-                 8,
-                 17);
-    console_putf("REG          = 0x0000000000000000", reg, 8, 17);
 
+    console_putf("REG_PTR      = 0x0000000000000000", base & ~0xfff, 8, 17);
+    console_putf("REG          = 0x0000000000000000", zone->lapic_reg, 8, 17);
+    console_putf("APIC_BASE    = 0x0000000000000000", base, 8, 17);
+    console_putf("APIC_REG     = 0x0000000000000000", zone->lapic_reg, 8, 17);
     console_ok();
+    return apic_cpu_is_bsp(base);
 }
 
 static void
@@ -106,31 +95,22 @@ cpu_trampoline()
         console_puts("Bad ZONE address");
         PANIC();
     }
+
     console_start("Trampoline");
-
-    uintptr_t apic_base = apic_get_base_msr();
-    const int is_bsp    = apic_cpu_is_bsp(apic_base);
-    if (!is_bsp) {
-        /* The bsp lapic is already remapped */
-        /* remap_lapic(zone); */
-    }
-
+    int is_bsp       = lapic_init(zone);
     uint32_t apic_id = APIC_REG_APIC_ID(zone->lapic_reg);
     uint32_t cpu_id  = cpu_id_from_apic_id(apic_id);
-
-    console_putf("ZONE         = 0x0000000000000000", (uintptr_t)zone, 8, 17);
-    console_putf("APIC_BASE    = 0x0000000000000000", apic_base, 8, 17);
+    console_putf("IS_BSP       = 0x00", is_bsp, 1, 17);
     console_putf("APIC_ID      = 0x00000000", apic_id, 4, 17);
     console_putf("CPU_ID       = 0x00000000", cpu_id, 4, 17);
-    console_putf("IS_BSP       = 0x00", is_bsp, 1, 17);
+    console_putf("ZONE         = 0x0000000000000000", (uintptr_t)zone, 8, 17);
     console_putf(
         "INFO         = 0x0000000000000000", (uintptr_t)zone->info, 8, 17);
 
     if (is_bsp) {
         kdata_get()->cpu.info[cpu_id].status |= CPU_STAT_BSP;
+        /* Other bootup code */
     }
-
-    enable_local_apic(zone);
 
     for (;;) {
         HALT();
@@ -194,10 +174,10 @@ alloc_cpu_zones()
             }
             uint32_t apic_id = APIC_REG_APIC_ID(reg);
             if (apic_id == kd->cpu.info[i].apic_id) {
-                found_bsp       = 1;
-                zone->lapic_reg = reg;
+                found_bsp = 1;
+                /* zone->lapic_reg = reg; */
                 move_stack(zone);
-                enable_local_apic(zone);
+                /* enable_local_apic(zone); */
             }
         }
         zone->info = &kd->cpu.info[i];
