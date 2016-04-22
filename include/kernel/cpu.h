@@ -66,4 +66,6 @@ uint32_t cpu_id_from_x2apic_id(uint32_t x2apic_id);
 
 uint32_t cpu_id_from_apic_id(uint32_t apic_id);
 
+uintptr_t cpu_get_zone_addr();
+
 #endif /* _CPU_H */

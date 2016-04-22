@@ -101,8 +101,7 @@ check_bsp_sanity()
 void
 cpu_trampoline()
 {
-    cpu_zone_t* zone =
-        (cpu_zone_t*)(cpu_trampoline_get_zone_stack_addr() - CPU_STACK_SIZE);
+    cpu_zone_t* zone = (cpu_zone_t*)cpu_get_zone_addr();
     if (zone == 0) {
         console_puts("Bad ZONE address");
         PANIC();

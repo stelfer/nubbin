@@ -1,7 +1,7 @@
 
 global cpu_spin_here
 global cpu_move_stack
-global cpu_trampoline_get_zone_stack_addr
+global cpu_get_zone_addr
 global cpu_isr_apic_timer
 global cpu_apic_base
 	
@@ -41,11 +41,11 @@ cpu_apic_base:
 	and eax, 0fffff000h
 	ret
 	
-cpu_trampoline_get_zone_stack_addr:
+cpu_get_zone_addr:
 	;; cpu_trampoline() will push rsp, mov rbp, rsp on entry, so we use that to find the
 	;; top of the stack
-	mov rax, rbp
-	add rax, 8
+	mov rax, rsp
+	and rax, -0x2000
 	ret
 
 cpu_isr_apic_timer:
