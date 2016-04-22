@@ -179,18 +179,17 @@ alloc_cpu_zones()
             PANIC();
         }
         if (!found_bsp) {
-            /* apic_set_base_msr(apic_base); */
             volatile uintptr_t reg = apic_get_base_msr() & ~0xfff;
             if (reg == 0) {
                 console_puts("Got NULL apic base");
                 PANIC();
             }
-            zone->lapic_reg = reg;
-            enable_local_apic(zone);
             uint32_t apic_id = APIC_REG_APIC_ID(reg);
             if (apic_id == kd->cpu.info[i].apic_id) {
-                found_bsp = 1;
+                found_bsp       = 1;
+                zone->lapic_reg = reg;
                 move_stack(zone);
+                enable_local_apic(zone);
             }
         }
         zone->info = &kd->cpu.info[i];
