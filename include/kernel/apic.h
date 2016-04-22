@@ -152,4 +152,10 @@ void apic_enable();
 
 void apic_timer_init(uintptr_t reg);
 
+void apic_pit_prepare_sleep(uint32_t sec);
+
+void apic_pit_sleep();
+
+uint32_t apic_calibrate_timer(uintptr_t reg);
+
 #endif /* _APIC_H */

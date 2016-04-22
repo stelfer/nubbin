@@ -3,7 +3,8 @@ global apic_reg_read32
 global apic_spurious_isr
 global apic_enable
 global apic_remap_pic
-
+global apic_calibrate_timer
+	
 PIC1		equ 0x20	
 PIC2		equ 0xA0	
 PIC1_COMMAND	equ PIC1
@@ -56,13 +57,52 @@ apic_enable:
 	wrmsr
 	sti
 	ret
+
+;;; In: RDI -> the lapic_reg
+apic_calibrate_timer:
+	;;initialize PIT Ch 2 in one-shot mode
+	;;waiting 1 sec could slow down boot time considerably,
+	;;so we'll wait 1/100 sec, and multiply the counted ticks
+	mov			dx, 61h
+	in			al, dx
+	and			al, 0fdh
+	or			al, 1
+	out			dx, al
+	mov			al, 10110010b
+	out			43h, al
+	;;1193180/100 Hz = 11931 = 2e9bh
+	mov			al, 9bh		;LSB
+	out			42h, al
+	in			al, 60h		;short delay
+	mov			al, 2eh		;MSB
+	out			42h, al
+	;;reset PIT one-shot counter (start counting)
+	in			al, dx
+	and			al, 0feh
+	out			dx, al		;gate low
+	or			al, 1
+	out			dx, al		;gate high
+	;;reset APIC timer (set counter to -1)
+	;; mov			dword [apic+APIC_TMRINITCNT], ebx
+	;;now wait until PIT counter reaches
+.loop:
+	in			al, dx
+	and			al, 20h
+	hlt
+	jnz			.loop
+
+	hlt
+	ret
+
+	
+
 	
 pic_iowait:
 	nop
 	ret
 
-section .setup	
 bits 32	
+section .setup	
 apic_remap_pic:
 	in al, PIC1_DATA
 	push ax
