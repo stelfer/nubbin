@@ -1,8 +1,9 @@
 
 global cpu_spin_here
 global cpu_move_stack
-
 global cpu_trampoline_get_zone_stack_addr
+global cpu_isr_apic_timer
+global cpu_apic_base
 	
 bits 64
 section .text
@@ -34,42 +35,6 @@ cpu_move_stack:
 	ret
 
 	
-cpu_get_apic_id:
-	mov eax, 0x0000000B
-	cpuid
-
-global cpu_enable_apic	
-cpu_enable_apic:
-	mov ecx, 1bh
-	rdmsr
-	bts eax, 11
-	wrmsr
-	sti
-
-	.loop:
-	hlt
-	jmp .loop
-	
-	ret
-
-global cpu_has_apic
-cpu_has_apic:
-	push rbx
-	mov eax, 1
-	cpuid
-	mov eax, edx
-	and eax, 0x200
-	pop rbx
-	ret
-
-global cpu_apic_enabled
-cpu_apic_enabled:
-	mov ecx, 1bh
-	rdmsr
-	and eax, 0800h
-	ret
-
-global cpu_apic_base
 cpu_apic_base:
 	mov ecx, 1bh
 	rdmsr
@@ -83,3 +48,10 @@ cpu_trampoline_get_zone_stack_addr:
 	add rax, 8
 	ret
 
+cpu_isr_apic_timer:
+	;; the region is located at the bottom of the zone, which is a 2*4k aligned region
+	mov rax, rsp
+	and rax, -0x2000
+	mov rax, [rax]
+	mov DWORD [rax + 0xb0], 0
+	ret

@@ -40,13 +40,6 @@ alloc_cpu_zone()
         memory_percpu_alloc_phy(PERCPU_TYPE_ZONE, sizeof(cpu_zone_t)));
 }
 
-void
-cpu_isr_apic_timer(uint8_t irq, interrupt_frame_t* frame)
-{
-    volatile uint64_t reg = apic_get_base_msr() & ~0xfff;
-    APIC_REG_EOI(reg)     = 0;
-}
-
 void apic_enable_timer();
 
 static void
