@@ -60,6 +60,11 @@ enable_local_apic(volatile cpu_zone_t* zone)
     APIC_REG_TMRINITCNT(reg) = 0x1000000;
 
     apic_enable();
+    console_putf("REG_PTR      = 0x0000000000000000",
+                 (uintptr_t)&zone->lapic_reg,
+                 8,
+                 17);
+    console_putf("REG          = 0x0000000000000000", reg, 8, 17);
 
     console_ok();
 }
@@ -156,8 +161,12 @@ move_stack(cpu_zone_t* zone)
      * won't matter anyway since we are going to replace the old values here
      * with the trampoline anyway */
     console_start("Moving stack");
-    cpu_move_stack((uintptr_t)&zone->stack[CPU_STACK_SIZE - 1],
-                   (uintptr_t)&boot_paddr);
+
+    const uintptr_t old = (uintptr_t)&boot_paddr;
+    const uintptr_t new = (uintptr_t)&zone->stack[CPU_STACK_SIZE - 1];
+    console_putf("OLD          = 0x0000000000000000", old, 8, 17);
+    console_putf("NEW          = 0x0000000000000000", new, 8, 17);
+    cpu_move_stack(new, old);
     console_ok();
 }
 
