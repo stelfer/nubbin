@@ -48,9 +48,9 @@ extern uintptr_t cpu_stack_size;
  * use page protection to give it UC semantics
  */
 struct cpu_zone {
+    volatile uintptr_t lapic_reg;
     uint8_t stack[CPU_STACK_SIZE];
     cpu_kdata_info_t* info;
-    volatile uintptr_t lapic_reg;
     uintptr_t schedule[512] __attribute__((aligned(0x1000)));
 } __packed;
 typedef struct cpu_zone cpu_zone_t;
