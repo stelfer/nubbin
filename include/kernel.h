@@ -17,4 +17,8 @@ PANIC()
 
 #define UNSUPPORTED PANIC
 
+#ifndef CLOCK_HZ
+#define CLOCK_HZ 100
+#endif
+
 #endif /* _KERNEL_H */

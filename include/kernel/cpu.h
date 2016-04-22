@@ -36,6 +36,7 @@ struct cpu_kdata {
     /* Indexed by APIC_ID */
     uint8_t have_x2apic;
     uint8_t num_cpus;
+    uint32_t ticks_per_hz;
     cpu_kdata_info_t info[MAXCPUS];
 } __packed;
 typedef struct cpu_kdata cpu_kdata_t;

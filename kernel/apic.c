@@ -3,6 +3,7 @@
 #include <nubbin/kernel.h>
 #include <nubbin/kernel/apic.h>
 #include <nubbin/kernel/console.h>
+#include <nubbin/kernel/kdata.h>
 
 void
 apic_timer_init(uintptr_t reg)
@@ -18,19 +19,11 @@ apic_timer_init(uintptr_t reg)
     APIC_REG_TMRDIV(reg)    = 0x03;
     APIC_REG_LVT_TMR(reg)   = 32;
 
-    /* apic_pit_prepare_sleep(10000); */
-
-    /* APIC_REG_TMRINITCNT(reg) = -1; */
-
-    /* apic_pit_lseep(); */
-
-    uint32_t ticks = apic_calibrate_timer(reg);
-
-    /* 0xffffffff - APIC_REG_TMRCURRCNT(reg); */
-    console_putd(ticks);
-    HALT();
-
+    kdata_t* kd = kdata_get();
+    if (kd->cpu.ticks_per_hz == 0) {
+        kd->cpu.ticks_per_hz = apic_calibrate_timer(reg, CLOCK_HZ);
+    }
     APIC_REG_TMRDIV(reg)     = 0x03;
     APIC_REG_LVT_TMR(reg)    = 32 | APIC_TMR_PERIODIC;
-    APIC_REG_TMRINITCNT(reg) = ticks;
+    APIC_REG_TMRINITCNT(reg) = kd->cpu.ticks_per_hz;
 }

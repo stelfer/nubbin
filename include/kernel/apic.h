@@ -156,6 +156,6 @@ void apic_pit_prepare_sleep(uint32_t sec);
 
 void apic_pit_sleep();
 
-uint32_t apic_calibrate_timer(uintptr_t reg);
+uint32_t apic_calibrate_timer(uintptr_t reg, uint32_t hz);
 
 #endif /* _APIC_H */
