@@ -4,6 +4,13 @@ global cpu_move_stack
 global cpu_get_zone_addr
 global cpu_isr_apic_timer
 global cpu_apic_base
+global cpu_prepare_trampoline
+
+
+extern asp_trampoline_start
+extern asp_trampoline_stop	
+	
+CPU_ZONE_SIZE equ 0x4000	;FIXME: This should be common with the def in cpu.h
 	
 bits 64
 section .text
@@ -40,18 +47,27 @@ cpu_apic_base:
 	rdmsr
 	and eax, 0fffff000h
 	ret
-	
+
 cpu_get_zone_addr:
 	;; cpu_trampoline() will push rsp, mov rbp, rsp on entry, so we use that to find the
 	;; top of the stack
 	mov rax, rsp
-	and rax, -0x2000
+	and rax, -CPU_ZONE_SIZE
 	ret
 
 cpu_isr_apic_timer:
 	;; the region is located at the bottom of the zone, which is a 2*4k aligned region
 	mov rax, rsp
-	and rax, -0x2000
+	and rax, -CPU_ZONE_SIZE
 	mov rax, [rax]
 	mov DWORD [rax + 0xb0], 0
 	ret
+
+cpu_prepare_trampoline:
+	mov ecx, asp_trampoline_stop
+	sub ecx, asp_trampoline_start
+	mov esi, asp_trampoline_start
+	cld
+	rep movsb
+	ret
+	

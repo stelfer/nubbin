@@ -137,6 +137,12 @@ apic_calibrate_timer:
 	
 	pop rbx
 	ret
+
+
+;;; In: RDI -> Address of 
+apic_boot_asp:	
+	ret
+
 	
 pic_iowait:
 	nop

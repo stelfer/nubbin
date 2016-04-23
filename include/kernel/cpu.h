@@ -52,10 +52,15 @@ struct cpu_zone {
     volatile uintptr_t lapic_reg;
     uint8_t stack[CPU_STACK_SIZE];
     cpu_kdata_info_t* info;
+
     uintptr_t schedule[512] __attribute__((aligned(0x1000)));
+    uint8_t trampoline[4906] __attribute__((aligned(0x1000)));
+    uint8_t reserved[] __attribute__((aligned(0x1000)));
 } __packed;
 typedef struct cpu_zone cpu_zone_t;
-STATIC_ASSERT(sizeof(cpu_zone_t) == 0x2000);
+
+enum { CPU_ZONE_SIZE = 0x4000 };
+STATIC_ASSERT(sizeof(cpu_zone_t) == CPU_ZONE_SIZE);
 
 void cpu_bsp_init();
 
@@ -68,5 +73,7 @@ uint32_t cpu_id_from_x2apic_id(uint32_t x2apic_id);
 uint32_t cpu_id_from_apic_id(uint32_t apic_id);
 
 uintptr_t cpu_get_zone_addr();
+
+void cpu_prepare_trampoline(uintptr_t area);
 
 #endif /* _CPU_H */

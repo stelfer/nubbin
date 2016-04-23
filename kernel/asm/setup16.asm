@@ -8,7 +8,9 @@ extern gdt32.code
 extern gdt32.data	
 
 global start16
-
+global asp_trampoline_start
+global asp_trampoline_stop
+	
 NUM_BIOS_MMAP_ENTRIES equ 20
 	
 section .setup
@@ -143,6 +145,14 @@ read_bios_mmap:
 	popa
 	ret
 
+asp_trampoline_start:
+	cli
+	hlt
+	ret
+	times 128 db 0xf4
+asp_trampoline_stop:	
+
+	
 A20_ERR_MSG   db "A20 Not Enabled", 0
 READ_BIOS_ERR_MSG   db "Unable to read BIOS Memory", 0
 	

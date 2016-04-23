@@ -14,8 +14,6 @@ extern uintptr_t kernel_stack_paddr;
 
 static const char* CONSOLE_TAG = "CPU";
 
-uintptr_t cpu_trampoline_get_zone_stack_addr();
-
 uint32_t
 cpu_id_from_x2apic_id(uint32_t x2apic_id)
 {
@@ -176,11 +174,13 @@ alloc_cpu_zones()
             if (apic_id == kd->cpu.info[i].apic_id) {
                 found_bsp = 1;
                 move_stack(zone);
+                rewrite_stack(zone);
             }
+        } else {
+            /* Prepare the trampoline */
+            cpu_prepare_trampoline((uintptr_t)&zone->trampoline);
         }
         zone->info = &kd->cpu.info[i];
-        /*  */
-        rewrite_stack(zone);
     }
     console_ok();
 }
