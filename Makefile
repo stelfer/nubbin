@@ -9,9 +9,9 @@ QEMU_CPU		:= -cpu kvm64,+ssse3,+sse4.1,+sse4.2,-x2apic,-vme
 QEMU_NUMA		:= -numa node,nodeid=0,cpus=0-3,mem=512M -numa node,nodeid=1,cpus=4-7,mem=512M
 QEMU_SMP		:= -smp sockets=2,cores=2,threads=2
 QEMU_MACHINE		:= $(QEMU_CPU) $(QEMU_NUMA) $(QEMU_SMP)
-QEMU_NOGRAPHIC		:= -nographic
+#QEMU_NOGRAPHIC		:= -nographic
 # QEMU_DEBUG		:= -s -S
-QEMU_SERIAL		:= -serial mon:stdio --no-reboot -d int #int,exec,cpu,mmu,pcall,guest_errors
+QEMU_SERIAL		:= -serial mon:stdio --no-reboot -d guest_errors #int,exec,cpu,mmu,pcall,guest_errors
 QEMU_IMAGE_ARGS		:= $(QEMU_MACHINE) $(QEMU_DEBUG) $(QEMU_SERIAL) $(QEMU_NOGRAPHIC) -m 1G
 #-boot a -fda
 QEMU_KERNEL_ARGS	:= -kernel
@@ -31,12 +31,14 @@ KERNEL_OBJS 		:= 					\
 			build/nubbin/kernel/asm/task.ko		\
 			build/nubbin/kernel/asm/cpu.ko		\
 			build/nubbin/kernel/asm/isr.ko		\
+			build/nubbin/kernel/asm/smbios.ko	\
 			build/nubbin/kernel/asm/apic.ko		\
 			build/nubbin/kernel/console.ko		\
 			build/nubbin/kernel/string.ko		\
 			build/nubbin/kernel/cpu.ko		\
 			build/nubbin/kernel/memory.ko		\
 			build/nubbin/kernel/acpi.ko		\
+			build/nubbin/kernel/smbios.ko		\
 			build/nubbin/kernel/apic.ko		\
 			build/nubbin/kernel/kdata.ko		\
 			build/nubbin/kernel/interrupt.ko	\

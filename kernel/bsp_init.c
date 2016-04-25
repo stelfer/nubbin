@@ -6,6 +6,7 @@
 #include <nubbin/kernel/kdata.h>
 #include <nubbin/kernel/memory.h>
 #include <nubbin/kernel/serial.h>
+#include <nubbin/kernel/smbios.h>
 #include <nubbin/kernel/string.h>
 
 int hello_user();
@@ -22,6 +23,8 @@ bsp_init()
     memory_map_init_finish();
 
     acpi_init();
+
+    smbios_init();
 
     cpu_bsp_init();
 

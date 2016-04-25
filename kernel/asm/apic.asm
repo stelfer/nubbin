@@ -4,6 +4,8 @@ global apic_spurious_isr
 global apic_enable
 global apic_remap_pic
 global apic_calibrate_timer
+global apic_boot_asp
+global apic_sleep
 	
 PIC1		equ 0x20	
 PIC2		equ 0xA0	
@@ -28,6 +30,8 @@ APIC_TIMERINTCNT 	equ 00380h
 APIC_LVT_TMR 		equ 00320h	
 APIC_TMRCURRCNT		equ 00390h
 APIC_DISABLE		equ 10000h	
+APIC_ICRH		equ 00310h
+APIC_ICRL		equ 00300h
 	
 bits 64
 section .text	
@@ -63,6 +67,16 @@ apic_enable:
 	sti
 	ret
 
+
+PIC_CH2_DATA 	equ 0x42
+PIC_CMD		equ 0x43	
+
+	
+;;; In: RDI ->
+;;; Uses PIT Ch2
+apic_pit_wait:	
+
+	
 ;;; In: RDI -> the lapic_reg, RSI -> HZ
 apic_calibrate_timer:
 	;;initialize PIT Ch 2 in one-shot mode
@@ -74,19 +88,31 @@ apic_calibrate_timer:
 
 	mov rbx, rdi		; Holds apic address
 
+
 	mov dx, 61h
 	in al, dx
 	and al, 0fdh
 	or al, 1
 	out dx, al
+
+
+	
 	mov al, 10110010b
 	out 43h, al
+
+
+
 	;;1193180/100 Hz = 11931 = 2e9bh
 	mov al, 9bh ;LSB
+
 	out 42h, al
+
 	in al, 60h ;short delay
+
 	mov al, 2eh ;MSB
+
 	out 42h, al
+
 	;;reset PIT one-shot counter (start counting)
 	in al, dx
 	and al, 0feh
@@ -123,6 +149,9 @@ apic_calibrate_timer:
 	mul ebx
 	;; edx:eax holds the bus frequency
 
+	hlt
+
+	
 	pop rsi
 	mov ebx, esi
 	xor edx, edx
@@ -139,8 +168,70 @@ apic_calibrate_timer:
 	ret
 
 
-;;; In: RDI -> Address of 
+;;; In: RDI -> apic_reg, esi -> ticks to wait
+apic_sleep:
+	;; cli
+	;; sti
+	ret
+	test esi, esi
+	jz .done
+
+	dec esi
+ 	mov eax, dword [rdi + APIC_TMRCURRCNT]
+	mov ecx, eax
+.loop:
+  	mov eax, dword [rdi + APIC_TMRCURRCNT]
+	cmp eax, ecx
+	jle .nowrap
+	add ecx, edx		;bump up
+.nowrap:
+	sub ecx, eax
+	sub esi, ecx
+	js .done
+	mov ecx, eax
+	jmp .loop
+.done:	
+	sti
+	ret
+	
+
+;;; In: RDI -> reg, RSI-> apic_id, RDX -> zone
 apic_boot_asp:	
+
+	push rsi
+
+	push rbx
+	mov rbx, rdi
+
+	;; mov ecx, dword [rsi]
+	mov eax, esi
+	shl eax, 24
+	mov dword [0xfee00000 + APIC_ICRH], eax
+
+	xor eax, eax
+	mov eax, 0x00004500
+	mov dword [0xfee00000 + APIC_ICRL], eax
+
+	jmp $
+	
+	mov eax, esi
+	shl eax, 24
+	mov dword [0xfee00000 + APIC_ICRH], eax
+	
+
+	nop
+	
+	xor eax, eax
+	mov eax, 0x00004508
+	mov dword [0xfee00000 + APIC_ICRL], eax
+
+	
+	
+
+	pop rbx
+	cli
+	hlt
+
 	ret
 
 	

@@ -158,4 +158,8 @@ void apic_pit_sleep();
 
 uint32_t apic_calibrate_timer(uintptr_t reg, uint32_t hz);
 
+void apic_boot_asp(uintptr_t reg, uint8_t apic_id, uintptr_t zone);
+
+void apic_sleep(uintptr_t reg, uint32_t ticks, uint32_t ticks_per_hz);
+
 #endif /* _APIC_H */

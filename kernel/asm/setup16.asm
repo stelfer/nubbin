@@ -7,16 +7,37 @@ extern gdt32.descriptor
 extern gdt32.code
 extern gdt32.data	
 
-global start16
-global asp_trampoline_start
-global asp_trampoline_stop
+global bsp_start
+global asp_start
+global asp_stop
 	
 NUM_BIOS_MMAP_ENTRIES equ 20
 	
 section .setup
 
+align 4096
+asp_start:			; Must be 4k aligned, according to intel
+	cli
+
+	mov ds, ax
+ 
+	mov si, msg
+ch_loop:
+	lodsb
+	or al, al  ; zero=end of string
+	jz hang    ; get out
+	mov ah, 0x0E
+	int 0x10
+	jmp ch_loop
+ 
+hang:
+	jmp hang
+	hlt
+msg   db 'Hello World', 13, 10, 0
+asp_stop:	
+	
 ;;; Handle all real mode activities here
-start16:	
+bsp_start:	
 	cli
 
 	call check_a20
@@ -99,6 +120,7 @@ check_a20:
  
 	ret
 
+	
 ;;; Read the bios memory info while we are in real mode
 ;;; Input:
 ;;; Output CF -> error
@@ -144,13 +166,6 @@ read_bios_mmap:
 	mov [bios_mmap.num_items], esi
 	popa
 	ret
-
-asp_trampoline_start:
-	cli
-	hlt
-	ret
-	times 128 db 0xf4
-asp_trampoline_stop:	
 
 	
 A20_ERR_MSG   db "A20 Not Enabled", 0

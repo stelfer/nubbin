@@ -5,6 +5,8 @@
 #include <nubbin/kernel/console.h>
 #include <nubbin/kernel/kdata.h>
 
+CONSOLE_TAG("APIC");
+
 void
 apic_timer_init(uintptr_t reg)
 {
@@ -26,4 +28,14 @@ apic_timer_init(uintptr_t reg)
     APIC_REG_TMRDIV(reg)     = 0x03;
     APIC_REG_LVT_TMR(reg)    = 32 | APIC_TMR_PERIODIC;
     APIC_REG_TMRINITCNT(reg) = kd->cpu.ticks_per_hz;
+
+    console_start("SLEEPING");
+    apic_sleep(reg, 10000, kd->cpu.ticks_per_hz);
+    console_ok();
 }
+
+/* void */
+/* apic_sleep(uintptr_t reg, uint32_t ticks) */
+/* { */
+
+/* } */

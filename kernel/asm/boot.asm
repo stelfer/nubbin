@@ -1,6 +1,6 @@
 bits 16
 
-extern start16	
+extern bsp_start	
 extern setup_pos		; Defined by the linker, see linker script
 extern kernel_pos
 	
@@ -39,7 +39,7 @@ start:				; |
         cmp al, dl
         jne .wrong_bytes
 
-	jmp start16		; jump to loaded sector
+	jmp bsp_start		; jump to loaded sector
 	
 .disk_error:
         mov bx, DISK_ERROR_MSG

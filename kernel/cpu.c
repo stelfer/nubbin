@@ -82,6 +82,20 @@ check_bsp_sanity()
     }
 }
 
+void
+boot_asps(uintptr_t reg)
+{
+    kdata_t* kd = kdata_get();
+    for (uint8_t i = 0; i < kd->cpu.num_cpus; ++i) {
+        if ((kd->cpu.info[i].status & CPU_STAT_BSP)) {
+            continue;
+        }
+        console_putq(kd->cpu.info[i].zone);
+        console_putq(kd->cpu.info[i].apic_id);
+        apic_boot_asp(reg, kd->cpu.info[i].apic_id, kd->cpu.info[i].zone);
+    }
+}
+
 /*
  * Main entry-point for every cpu
  */
@@ -107,7 +121,7 @@ cpu_trampoline()
 
     if (is_bsp) {
         kdata_get()->cpu.info[cpu_id].status |= CPU_STAT_BSP;
-        /* Other bootup code */
+        boot_asps(zone->lapic_reg);
     }
 
     for (;;) {
@@ -119,7 +133,8 @@ static void
 rewrite_stack(cpu_zone_t* zone)
 {
     /* Finish fixing up the stack */
-    /* The second stack entry points to the first, this prepares for pop rbp */
+    /* The second stack entry points to the first, this prepares for pop rbp
+     */
     *((uintptr_t*)&zone->stack[CPU_STACK_SIZE - 2 * 8]) =
         (uintptr_t)&zone->stack[CPU_STACK_SIZE - 1 * 8];
 
@@ -176,11 +191,9 @@ alloc_cpu_zones()
                 move_stack(zone);
                 rewrite_stack(zone);
             }
-        } else {
-            /* Prepare the trampoline */
-            cpu_prepare_trampoline((uintptr_t)&zone->trampoline);
         }
-        zone->info = &kd->cpu.info[i];
+        zone->info       = &kd->cpu.info[i];
+        zone->info->zone = (uintptr_t)zone;
     }
     console_ok();
 }
