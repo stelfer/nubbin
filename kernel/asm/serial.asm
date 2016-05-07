@@ -8,7 +8,7 @@ global serial_write
 extern string_hexify
 extern strlen	
 
-%include "nubbin/kernel/asm/spinlock.asm"
+%include "projects/nubbin/kernel/asm/spinlock.asm"
 	
 PORT equ 3f8h	
 bits 64

@@ -109,7 +109,7 @@ load_user:
 	call print_string_pm
 	jmp $
 
-%include "nubbin/kernel/asm/print_pm.asm"
+%include "projects/nubbin/kernel/asm/print_pm.asm"
 
 NO_LONG_MODE_MSG db "Err:No Long Mode", 0
 IN_PROT_MODE_MSG db "In Protected Mode",0

@@ -17,34 +17,34 @@ QEMU_IMAGE_ARGS		:= $(QEMU_MACHINE) $(QEMU_DEBUG) $(QEMU_SERIAL) $(QEMU_NOGRAPHI
 QEMU_KERNEL_ARGS	:= -kernel
 
 KERNEL_OBJS 		:= 					\
-			build/nubbin/kernel/bsp_init.ko		\
-			build/nubbin/kernel/io.ko 		\
-			build/nubbin/kernel/asm/boot.o		\
-			build/nubbin/kernel/asm/setup16.o	\
-			build/nubbin/kernel/asm/setup32.o	\
-			build/nubbin/kernel/asm/ata.o		\
-			build/nubbin/kernel/asm/serial.ko	\
-			build/nubbin/kernel/asm/string.ko	\
-			build/nubbin/kernel/asm/memory.o	\
-			build/nubbin/kernel/asm/interrupt.o	\
-			build/nubbin/kernel/asm/setup64.o	\
-			build/nubbin/kernel/asm/task.ko		\
-			build/nubbin/kernel/asm/cpu.ko		\
-			build/nubbin/kernel/asm/isr.ko		\
-			build/nubbin/kernel/asm/smbios.ko	\
-			build/nubbin/kernel/asm/apic.ko		\
-			build/nubbin/kernel/console.ko		\
-			build/nubbin/kernel/string.ko		\
-			build/nubbin/kernel/cpu.ko		\
-			build/nubbin/kernel/memory.ko		\
-			build/nubbin/kernel/acpi.ko		\
-			build/nubbin/kernel/smbios.ko		\
-			build/nubbin/kernel/apic.ko		\
-			build/nubbin/kernel/kdata.ko		\
-			build/nubbin/kernel/interrupt.ko	\
-			build/nubbin/kernel/user.o
+			build/projects/nubbin/kernel/bsp_init.ko		\
+			build/projects/nubbin/kernel/io.ko 		\
+			build/projects/nubbin/kernel/asm/boot.o		\
+			build/projects/nubbin/kernel/asm/setup16.o	\
+			build/projects/nubbin/kernel/asm/setup32.o	\
+			build/projects/nubbin/kernel/asm/ata.o		\
+			build/projects/nubbin/kernel/asm/serial.ko	\
+			build/projects/nubbin/kernel/asm/string.ko	\
+			build/projects/nubbin/kernel/asm/memory.o	\
+			build/projects/nubbin/kernel/asm/interrupt.o	\
+			build/projects/nubbin/kernel/asm/setup64.o	\
+			build/projects/nubbin/kernel/asm/task.ko		\
+			build/projects/nubbin/kernel/asm/cpu.ko		\
+			build/projects/nubbin/kernel/asm/isr.ko		\
+			build/projects/nubbin/kernel/asm/smbios.ko	\
+			build/projects/nubbin/kernel/asm/apic.ko		\
+			build/projects/nubbin/kernel/console.ko		\
+			build/projects/nubbin/kernel/string.ko		\
+			build/projects/nubbin/kernel/cpu.ko		\
+			build/projects/nubbin/kernel/memory.ko		\
+			build/projects/nubbin/kernel/acpi.ko		\
+			build/projects/nubbin/kernel/smbios.ko		\
+			build/projects/nubbin/kernel/apic.ko		\
+			build/projects/nubbin/kernel/kdata.ko		\
+			build/projects/nubbin/kernel/interrupt.ko	\
+			build/projects/nubbin/kernel/user.o
 
-OS_IMAGE		:= build/nubbin/os-image
+OS_IMAGE		:= build/projects/nubbin/os-image
 
 nubbin-clean:
 	rm -f $(OS_IMAGE)
@@ -68,7 +68,7 @@ $(BUILD)/%.ko : %.asm | $(DEPDIR)/%.d
 	$(call NASM_BUILD,$(TARGET_FORMAT))
 
 $(OS_IMAGE): $(KERNEL_OBJS)
-	$(TARGET_LD) -m $(TARGET_LDEMU) -Tnubbin/kernel/asm/os-image.$(TARGET_LDEMU).ld $^ $(KERNEL_LD_OPTS) -o $@.elf64
+	$(TARGET_LD) -m $(TARGET_LDEMU) -Tprojects/nubbin/kernel/asm/os-image.$(TARGET_LDEMU).ld $^ $(KERNEL_LD_OPTS) -o $@.elf64
 	$(TARGET_OBJCOPY) -S -O binary $@.elf64 $@
 
 .PHONY: run-image

@@ -51,7 +51,7 @@ start:				; |
         call print_string_rm
         jmp $
 
-%include "nubbin/kernel/asm/print_rm.asm"
+%include "projects/nubbin/kernel/asm/print_rm.asm"
         
 DISK_ERROR_MSG:
         db "Disk read error!", 0
