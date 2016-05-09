@@ -46,16 +46,20 @@ KERNEL_OBJS 		:= 					\
 
 OS_IMAGE		:= build/projects/nubbin/os-image
 
+BUILD_CLEAN 		+= nubbin-clean
+
+KERNEL_VERSION		!= cd projects/nubbin && git rev-parse --short HEAD
+TARGET_CCFLAGS		+= -mcmodel=large -DVERSION=\"$(KERNEL_VERSION)\"
+
+TESTS			:= 
+
 nubbin-clean:
 	rm -f $(OS_IMAGE)
 	rm -f $(KERNEL_OBJS)
 	rm -f $(patsubst build/%.o,build/deps/%.d,$(KERNEL_OBJS))
 	rm -f $(patsubst build/%.bin,build/deps/%.d,$(PM_START_BIN) $(RM_START)) 
 
-KERNEL_VERSION		!= cd $(PROJECT) && git rev-parse --short HEAD
-TARGET_CCFLAGS		+= -mcmodel=large -DVERSION=\"$(KERNEL_VERSION)\"
 
-TESTS		:= 
 
 $(BUILD)/%.ko : %.c | $(DEPDIR)/%.d
 	$(PRECOMPILE_DEP)
